@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Checkout | Idukki Spices</title>
+    <meta name="description" content="Checkout and buy spices from Idukki Spices.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html"><img class="brand-logo" src="assets/idukki-spices-logo.jpeg" alt="Idukki Spices logo"><span>Idukki Spices</span></a>
+        <button class="nav-toggle" type="button" data-nav-toggle aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        <div class="nav-links" data-nav-links>
+          <a href="index.html">Home</a>
+          <a href="about.html">About</a>
+          <a href="shop.html">Shop</a>
+          <a class="cart-link" href="cart.html">Cart <span class="cart-count" data-cart-count>0</span></a>
+          <a href="account.html" data-account-link>Account</a>
+          <a href="contact.html">Contact</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="section">
+          <p class="eyebrow">Checkout</p>
+          <h1>Buy your spices</h1>
+          <p>Review your order and enter delivery details. The payment button is ready for a Stripe or PayPal connection when your payment account is available.</p>
+        </div>
+      </section>
+
+      <section class="section checkout-layout">
+        <aside class="summary">
+          <h2>Order summary</h2>
+          <div data-checkout-items></div>
+          <div class="summary-row total"><span>Total</span><span data-checkout-total>€0.00</span></div>
+        </aside>
+
+        <form class="form-card" data-checkout-form>
+          <div class="field">
+            <label for="checkout-name">Full name</label>
+            <input id="checkout-name" name="name" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="checkout-email">Email</label>
+            <input id="checkout-email" name="email" type="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="checkout-address">Delivery address</label>
+            <textarea id="checkout-address" name="address" autocomplete="street-address" required></textarea>
+          </div>
+          <div class="field">
+            <label for="payment-method">Payment method</label>
+            <select id="payment-method" name="payment-method" data-payment-method required>
+              <option value="card">Card payment</option>
+              <option value="paypal">PayPal</option>
+              <option value="bank">Bank transfer</option>
+            </select>
+          </div>
+          <div class="payment-panel" data-payment-panel>
+            Secure card payment can be connected with Stripe when the live payment account is ready.
+          </div>
+          <button class="button" type="submit">Pay securely</button>
+          <p class="form-note" data-checkout-note aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <strong>Idukki Spices</strong>
+        <a href="cart.html">Back to cart</a>
+      </div>
+    </footer>
+    <script src="script.js"></script>
+  </body>
+</html>

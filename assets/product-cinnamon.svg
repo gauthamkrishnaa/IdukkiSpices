@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 360" role="img" aria-labelledby="title">
+  <title id="title">Cinnamon sticks</title>
+  <rect width="520" height="360" fill="#f7e8d2"/>
+  <ellipse cx="260" cy="260" rx="178" ry="42" fill="#d7ba92"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M122 223c86-33 178-49 277-48" stroke="#a45b36" stroke-width="38"/>
+    <path d="M142 244c82-32 178-46 286-42" stroke="#c97845" stroke-width="34"/>
+    <path d="M145 221c74-25 156-38 246-37" stroke="#6f3825" stroke-width="12"/>
+    <path d="M167 243c72-24 155-35 250-33" stroke="#7e422a" stroke-width="10"/>
+  </g>
+  <circle cx="399" cy="175" r="20" fill="#7a3d27"/>
+  <circle cx="425" cy="202" r="18" fill="#8b492e"/>
+</svg>

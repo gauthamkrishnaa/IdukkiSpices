@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 360" role="img" aria-labelledby="title">
+  <title id="title">Cloves</title>
+  <rect width="520" height="360" fill="#f3e5d0"/>
+  <ellipse cx="260" cy="250" rx="168" ry="43" fill="#d8bd98"/>
+  <g stroke="#6b3524" stroke-width="18" stroke-linecap="round">
+    <path d="M166 235l74-100"/>
+    <path d="M226 253l38-125"/>
+    <path d="M295 245l-11-128"/>
+    <path d="M357 224l-55-102"/>
+    <path d="M202 198l-45-74"/>
+  </g>
+  <g fill="#8b4930">
+    <circle cx="245" cy="128" r="24"/>
+    <circle cx="267" cy="125" r="24"/>
+    <circle cx="283" cy="117" r="24"/>
+    <circle cx="302" cy="122" r="24"/>
+    <circle cx="157" cy="123" r="23"/>
+  </g>
+</svg>

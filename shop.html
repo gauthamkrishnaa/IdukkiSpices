@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shop | Idukki Spices</title>
+    <meta name="description" content="Shop green cardamom, mixed spices, black pepper, cloves, cinnamon, star anise, and bay leaves from Idukki Spices.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body data-page="shop">
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html"><img class="brand-logo" src="assets/idukki-spices-logo.jpeg" alt="Idukki Spices logo"><span>Idukki Spices</span></a>
+        <button class="nav-toggle" type="button" data-nav-toggle aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        <div class="nav-links" data-nav-links>
+          <a href="index.html">Home</a>
+          <a href="about.html">About</a>
+          <a class="active" href="shop.html">Shop</a>
+          <a class="cart-link" href="cart.html">Cart <span class="cart-count" data-cart-count>0</span></a>
+          <a href="account.html" data-account-link>Account</a>
+          <a href="contact.html">Contact</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="section">
+          <p class="eyebrow">Shop</p>
+          <h1>Whole spices and everyday blends</h1>
+          <p>Search, filter, and adjust quantities directly from the product list.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="shop-toolbar" aria-label="Shop filters">
+          <div class="field compact">
+            <label for="shop-search">Search</label>
+            <input id="shop-search" data-shop-search type="search" placeholder="Cardamom, pepper, cinnamon">
+          </div>
+          <div class="field compact">
+            <label for="shop-category">Category</label>
+            <select id="shop-category" data-shop-category>
+              <option value="all">All spices</option>
+              <option value="whole">Whole spices</option>
+              <option value="blend">Blends</option>
+              <option value="leaf">Leaves</option>
+            </select>
+          </div>
+          <div class="field compact">
+            <label for="shop-sort">Sort</label>
+            <select id="shop-sort" data-shop-sort>
+              <option value="featured">Featured</option>
+              <option value="price-low">Price low to high</option>
+              <option value="price-high">Price high to low</option>
+              <option value="name">Name</option>
+            </select>
+          </div>
+        </div>
+        <div class="product-grid" data-products></div>
+        <p class="empty-results" data-empty-results hidden>No spices match that search.</p>
+      </section>
+    </main>
+
+    <div class="modal" data-product-modal hidden>
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <button class="modal-close" type="button" data-modal-close aria-label="Close product details">x</button>
+        <img data-modal-image src="assets/product-cardamom.svg" alt="">
+        <div>
+          <p class="eyebrow">Quick view</p>
+          <h2 id="modal-title" data-modal-title>Product</h2>
+          <p data-modal-description></p>
+          <p class="product-meta" data-modal-uses></p>
+          <div class="price" data-modal-price></div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <strong>Idukki Spices</strong>
+        <span>Cardamom, pepper, cloves, cinnamon, star anise, bay leaves, and more.</span>
+      </div>
+    </footer>
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 360" role="img" aria-labelledby="title">
+  <title id="title">Bay leaves</title>
+  <rect width="520" height="360" fill="#f3ead7"/>
+  <ellipse cx="260" cy="252" rx="168" ry="43" fill="#d5bd9a"/>
+  <g fill="#768c4e" stroke="#526a39" stroke-width="5">
+    <path d="M132 224c80-98 165-105 253-21-87 58-171 65-253 21z"/>
+    <path d="M178 155c82-76 156-69 223 21-84 35-158 29-223-21z"/>
+    <path d="M202 257c75-61 139-52 192 27-73 24-137 15-192-27z"/>
+  </g>
+  <g stroke="#e2d6a5" stroke-width="4" fill="none" opacity=".7">
+    <path d="M136 222c82-12 165-18 249-19"/>
+    <path d="M180 155c70 9 143 16 219 21"/>
+    <path d="M204 257c61 9 123 18 188 27"/>
+  </g>
+</svg>

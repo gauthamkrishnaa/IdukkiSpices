@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 360" role="img" aria-labelledby="title">
+  <title id="title">Star anise</title>
+  <rect width="520" height="360" fill="#f1e4d2"/>
+  <ellipse cx="260" cy="256" rx="168" ry="43" fill="#d3bb99"/>
+  <g fill="#6d3928">
+    <path d="M252 118l25 58 63-7-45 45 27 57-62-29-47 45 8-64-57-31 66-12z"/>
+    <path d="M153 202l15 35 38-4-27 27 16 35-37-18-28 27 5-39-34-18 39-7z"/>
+    <path d="M369 163l14 32 35-4-25 25 15 33-35-17-26 25 5-36-32-18 37-6z"/>
+  </g>
+  <g fill="#8c513b">
+    <circle cx="255" cy="205" r="18"/>
+    <circle cx="155" cy="244" r="11"/>
+    <circle cx="371" cy="206" r="10"/>
+  </g>
+</svg>

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin | Idukki Spices</title>
+    <meta name="description" content="Idukki Spices admin dashboard for products, orders, stock, and delivery status.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body data-page="admin">
+    <header class="site-header">
+      <nav class="nav" aria-label="Admin navigation">
+        <a class="brand" href="admin.html"><img class="brand-logo" src="assets/idukki-spices-logo.jpeg" alt="Idukki Spices logo"><span>Idukki Spices Admin</span></a>
+        <div class="nav-links admin-nav">
+          <a href="#overview" data-admin-nav-tab="overview">Overview</a>
+          <a href="#products" data-admin-nav-tab="products">Products</a>
+          <a href="#orders" data-admin-nav-tab="orders">Orders</a>
+          <a href="#customers" data-admin-nav-tab="customers">Accounts</a>
+          <button class="admin-logout" type="button" data-admin-logout hidden>Logout</button>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="page-hero admin-hero">
+        <div class="section">
+          <p class="eyebrow">Owner dashboard</p>
+          <h1>Manage products, stock, orders, and delivery</h1>
+          <p>This admin prototype stores changes in this browser. For a live business, connect it to a real backend and protected login.</p>
+        </div>
+      </section>
+
+      <section class="section admin-login" data-admin-login>
+        <div class="form-card">
+          <h2>Admin login</h2>
+          <p class="lead">Sign in with the owner credentials to manage the store.</p>
+          <div class="field">
+            <label for="admin-email">Admin email</label>
+            <input id="admin-email" type="email" autocomplete="username" data-admin-email placeholder="admin@idukkispices.com">
+          </div>
+          <div class="field">
+            <label for="admin-password">Password</label>
+            <input id="admin-password" type="password" autocomplete="current-password" data-admin-password placeholder="Enter admin password">
+          </div>
+          <button class="button" type="button" data-admin-login-button>Open dashboard</button>
+          <p class="form-note" data-admin-login-note></p>
+        </div>
+      </section>
+
+      <section class="section admin-dashboard" data-admin-dashboard hidden>
+        <div class="admin-tabs" role="tablist" aria-label="Admin sections">
+          <button class="active" type="button" data-admin-tab="overview">Overview</button>
+          <button type="button" data-admin-tab="products">Products</button>
+          <button type="button" data-admin-tab="orders">Orders</button>
+          <button type="button" data-admin-tab="customers">Accounts</button>
+        </div>
+
+        <div class="admin-panel active" data-admin-panel="overview">
+          <div class="admin-stats" data-admin-stats></div>
+          <div class="admin-note">
+            <h2>Admin tools ready</h2>
+            <p>Use Products to update prices, stock, descriptions, and image paths. Use Orders to update payment and delivery status.</p>
+          </div>
+        </div>
+
+        <div class="admin-panel" data-admin-panel="products">
+          <div class="admin-panel-header">
+            <div>
+              <p class="eyebrow">Catalogue</p>
+              <h2>Products and inventory</h2>
+            </div>
+            <div class="admin-actions">
+              <button class="button light small" type="button" data-reset-products>Reset products</button>
+            </div>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Image path</th>
+                  <th>Description</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody data-admin-products></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel" data-admin-panel="orders">
+          <div class="admin-panel-header">
+            <div>
+              <p class="eyebrow">Orders</p>
+              <h2>Orders</h2>
+            </div>
+            <div class="admin-actions">
+              <button class="button light small" type="button" data-clear-orders>Clear orders</button>
+            </div>
+          </div>
+          <div class="admin-orders" data-admin-orders></div>
+        </div>
+
+        <div class="admin-panel" data-admin-panel="customers">
+          <div class="admin-panel-header">
+            <div>
+              <p class="eyebrow">Accounts</p>
+              <h2>Registered accounts</h2>
+            </div>
+          </div>
+          <div class="admin-orders" data-admin-customers></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <strong>Idukki Spices Admin</strong>
+        <span>Owner dashboard for products, orders, accounts, stock, and delivery.</span>
+      </div>
+    </footer>
+    <script src="script.js"></script>
+  </body>
+</html>

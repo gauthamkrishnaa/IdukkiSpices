@@ -1,0 +1,8 @@
+.env
+node_modules/
+.DS_Store
+dist/
+data/*.sqlite
+data/*.sqlite-*
+data/*.json
+!data/products.json

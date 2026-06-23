@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Assorted spices arranged on a warm market table</title>
+  <desc id="desc">Bowls and scattered spices including cardamom, pepper, cinnamon, star anise, cloves, and bay leaves.</desc>
+  <defs>
+    <linearGradient id="table" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#a8562f"/>
+      <stop offset=".55" stop-color="#7f3f25"/>
+      <stop offset="1" stop-color="#372820"/>
+    </linearGradient>
+    <radialGradient id="light" cx=".38" cy=".2" r=".82">
+      <stop offset="0" stop-color="#ffe2a6" stop-opacity=".65"/>
+      <stop offset=".45" stop-color="#ce7a35" stop-opacity=".25"/>
+      <stop offset="1" stop-color="#111" stop-opacity=".15"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#1d120d" flood-opacity=".35"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="760" fill="url(#table)"/>
+  <rect width="1200" height="760" fill="url(#light)"/>
+  <g opacity=".16" stroke="#ffe4bd" stroke-width="2">
+    <path d="M0 120h1200M0 265h1200M0 405h1200M0 552h1200M190 0v760M412 0v760M654 0v760M884 0v760"/>
+  </g>
+  <g filter="url(#shadow)">
+    <ellipse cx="300" cy="300" rx="178" ry="112" fill="#5b3527"/>
+    <ellipse cx="300" cy="276" rx="178" ry="112" fill="#f0c67e"/>
+    <ellipse cx="300" cy="268" rx="138" ry="76" fill="#4d6f42"/>
+    <g fill="#9dbc70">
+      <ellipse cx="230" cy="248" rx="17" ry="10" transform="rotate(-24 230 248)"/>
+      <ellipse cx="274" cy="292" rx="20" ry="11" transform="rotate(18 274 292)"/>
+      <ellipse cx="340" cy="240" rx="18" ry="10" transform="rotate(-12 340 240)"/>
+      <ellipse cx="370" cy="292" rx="21" ry="11" transform="rotate(28 370 292)"/>
+      <ellipse cx="305" cy="266" rx="18" ry="10" transform="rotate(7 305 266)"/>
+      <ellipse cx="258" cy="263" rx="15" ry="9" transform="rotate(45 258 263)"/>
+      <ellipse cx="325" cy="312" rx="16" ry="9" transform="rotate(-35 325 312)"/>
+    </g>
+  </g>
+  <g filter="url(#shadow)">
+    <ellipse cx="695" cy="425" rx="198" ry="124" fill="#4d2f23"/>
+    <ellipse cx="695" cy="398" rx="198" ry="124" fill="#e0b06c"/>
+    <ellipse cx="695" cy="389" rx="154" ry="84" fill="#171210"/>
+    <g fill="#2f2a25">
+      <circle cx="628" cy="368" r="9"/>
+      <circle cx="660" cy="420" r="8"/>
+      <circle cx="706" cy="344" r="9"/>
+      <circle cx="748" cy="397" r="8"/>
+      <circle cx="792" cy="369" r="9"/>
+      <circle cx="691" cy="394" r="8"/>
+      <circle cx="729" cy="439" r="9"/>
+      <circle cx="642" cy="394" r="7"/>
+    </g>
+  </g>
+  <g filter="url(#shadow)">
+    <path d="M240 545c110-22 235-4 342 37" fill="none" stroke="#c08b58" stroke-width="28" stroke-linecap="round"/>
+    <path d="M257 540c96-15 211 1 315 38" fill="none" stroke="#7d432a" stroke-width="13" stroke-linecap="round"/>
+    <path d="M286 608c128-30 263-8 374 37" fill="none" stroke="#cfa06b" stroke-width="25" stroke-linecap="round"/>
+    <path d="M303 602c113-23 236-2 348 39" fill="none" stroke="#895030" stroke-width="12" stroke-linecap="round"/>
+  </g>
+  <g filter="url(#shadow)" fill="#3a2219">
+    <path d="M918 230l22 38 44 8-31 32 6 44-41-19-40 20 6-44-32-31 44-9z"/>
+    <path d="M1015 432l17 30 35 7-25 25 5 35-32-15-32 16 5-36-26-24 36-7z"/>
+    <path d="M846 530l15 27 31 6-22 22 4 31-28-13-28 14 4-31-22-21 31-6z"/>
+  </g>
+  <g fill="#8f4c2f" filter="url(#shadow)">
+    <path d="M855 132c49 7 83 35 104 76-47 6-83-6-112-36-10-11-8-24 8-40z"/>
+    <path d="M982 141c34 22 52 56 55 101-43-7-70-27-83-62-6-16 3-29 28-39z"/>
+    <path d="M760 160c42 0 73 19 96 57-39 11-72 5-99-17-15-13-14-27 3-40z"/>
+  </g>
+  <g fill="#d2a46b" opacity=".9">
+    <circle cx="128" cy="555" r="8"/>
+    <circle cx="164" cy="588" r="6"/>
+    <circle cx="1060" cy="210" r="7"/>
+    <circle cx="1088" cy="268" r="5"/>
+    <circle cx="740" cy="150" r="6"/>
+    <circle cx="540" cy="205" r="7"/>
+    <circle cx="498" cy="174" r="5"/>
+  </g>
+</svg>

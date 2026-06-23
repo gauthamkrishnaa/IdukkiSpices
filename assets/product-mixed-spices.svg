@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 360" role="img" aria-labelledby="title">
+  <title id="title">Mixed whole spices</title>
+  <rect width="520" height="360" fill="#f7ead7"/>
+  <ellipse cx="260" cy="250" rx="176" ry="45" fill="#dac2a0"/>
+  <circle cx="210" cy="172" r="52" fill="#9a3c2f"/>
+  <circle cx="300" cy="178" r="58" fill="#d79038"/>
+  <circle cx="258" cy="225" r="58" fill="#4f3728"/>
+  <g fill="#15110f">
+    <circle cx="238" cy="212" r="9"/>
+    <circle cx="278" cy="235" r="8"/>
+    <circle cx="291" cy="203" r="7"/>
+  </g>
+  <g fill="#723f2c">
+    <path d="M356 115l18 32 37 6-27 26 6 37-34-16-33 17 5-38-27-25 38-6z"/>
+    <path d="M133 225l14 24 28 5-20 20 4 28-26-12-25 13 4-29-21-19 29-5z"/>
+  </g>
+  <path d="M148 121c64 0 120 18 166 54" fill="none" stroke="#8b4d2f" stroke-width="18" stroke-linecap="round"/>
+</svg>

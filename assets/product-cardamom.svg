@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 360" role="img" aria-labelledby="title">
+  <title id="title">Green cardamom pods</title>
+  <rect width="520" height="360" fill="#f5ead8"/>
+  <ellipse cx="260" cy="250" rx="168" ry="44" fill="#d8c2a0"/>
+  <g fill="#7fa35f" stroke="#4e7139" stroke-width="5">
+    <ellipse cx="165" cy="170" rx="55" ry="31" transform="rotate(-28 165 170)"/>
+    <ellipse cx="235" cy="145" rx="61" ry="34" transform="rotate(15 235 145)"/>
+    <ellipse cx="315" cy="174" rx="58" ry="33" transform="rotate(-12 315 174)"/>
+    <ellipse cx="222" cy="220" rx="56" ry="31" transform="rotate(-5 222 220)"/>
+    <ellipse cx="352" cy="225" rx="62" ry="35" transform="rotate(24 352 225)"/>
+  </g>
+  <g stroke="#5e7f42" stroke-width="3" opacity=".65">
+    <path d="M130 174c26-4 54-5 80-2"/>
+    <path d="M191 141c28 12 58 18 91 19"/>
+    <path d="M264 175c35 1 70-1 105-8"/>
+    <path d="M171 222c32 6 66 8 101 5"/>
+    <path d="M303 215c29 14 61 22 97 22"/>
+  </g>
+</svg>
