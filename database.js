@@ -79,12 +79,15 @@ function customerInsertSql(customer) {
 }
 
 function normalizeOrder(order) {
+  const customerEmail = order.customerEmail || order.customer?.email || "";
+  const linkedCustomer = order.customerId ? null : getCustomerByIdentity(customerEmail);
   return {
     ...order,
     id: order.id || `IDK-${Date.now().toString().slice(-6)}`,
     createdAt: order.createdAt || new Date().toISOString(),
     customer: order.customer || { name: "", email: "", address: "" },
-    customerEmail: order.customerEmail || order.customer?.email || "",
+    customerEmail,
+    customerId: order.customerId || linkedCustomer?.id || "",
     paymentMethod: order.paymentMethod || "card",
     paymentStatus: order.paymentStatus || "Pending",
     deliveryStatus: order.deliveryStatus || "New order",

@@ -26,10 +26,16 @@ loadEnvFile();
 
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "0.0.0.0";
-const adminEmail = process.env.ADMIN_EMAIL || "admin@idukkispices.com";
-const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH || "ceddbef0e6974ca0c1c4e081b2819f97:695cf3be2861775413ba7af2d209b3395e2e807afde8149f71a461bdc2ad2e72";
+function requiredEnv(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} must be set in the environment`);
+  return value;
+}
+
+const adminEmail = requiredEnv("ADMIN_EMAIL");
+const adminPasswordHash = requiredEnv("ADMIN_PASSWORD_HASH");
 const publicBaseUrl = process.env.PUBLIC_BASE_URL || `http://${host}:${port}`;
-const sessionSecret = process.env.SESSION_SECRET || crypto.createHash("sha256").update(adminPasswordHash).digest("hex");
+const sessionSecret = requiredEnv("SESSION_SECRET");
 const adminSessions = new Set();
 const otpChallenges = new Map();
 const MIN_ORDER_VALUE = 20;
@@ -218,7 +224,14 @@ function verifyPassword(password, storedHash) {
   const [salt, expected] = String(storedHash || "").split(":");
   if (!salt || !expected) return false;
   const actual = crypto.pbkdf2Sync(String(password || ""), salt, 120000, 32, "sha256").toString("hex");
-  return crypto.timingSafeEqual(Buffer.from(actual, "hex"), Buffer.from(expected, "hex"));
+  return safeEqual(actual, expected, "hex");
+}
+
+function safeEqual(actual, expected, encoding = "utf8") {
+  const actualBuffer = Buffer.from(String(actual || ""), encoding);
+  const expectedBuffer = Buffer.from(String(expected || ""), encoding);
+  if (actualBuffer.length !== expectedBuffer.length) return false;
+  return crypto.timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
 function normalizeEmail(value) {
@@ -272,7 +285,7 @@ function customerEmailFromToken(req) {
   const [payload, signature] = token.split(".");
   if (!payload || !signature) return null;
   const expected = crypto.createHmac("sha256", sessionSecret).update(payload).digest("base64url");
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  if (!safeEqual(signature, expected)) return null;
   try {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
     if (!data.email || data.exp < Date.now()) return null;
@@ -353,7 +366,6 @@ async function createStripeCheckout(order) {
     mode: "payment",
     success_url: `${publicBaseUrl}/payment-success.html?order=${encodeURIComponent(order.id)}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${publicBaseUrl}/checkout.html?payment=cancelled&order=${encodeURIComponent(order.id)}`,
-    customer_email: order.customer.email,
     "metadata[order_id]": order.id
   };
   order.items.forEach((item, index) => {
@@ -387,6 +399,38 @@ async function verifyStripeCheckoutSession(sessionId, orderId) {
   return data;
 }
 
+function verifyStripeWebhook(rawBody, signatureHeader) {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) throw new Error("STRIPE_WEBHOOK_SECRET is not configured");
+  const parts = Object.fromEntries(String(signatureHeader || "").split(",").map((part) => part.split("=")));
+  if (!parts.t || !parts.v1) throw new Error("Stripe signature is missing");
+  const expected = crypto.createHmac("sha256", secret).update(`${parts.t}.${rawBody}`).digest("hex");
+  if (!safeEqual(parts.v1, expected, "hex")) throw new Error("Stripe signature is invalid");
+  const ageSeconds = Math.abs((Date.now() / 1000) - Number(parts.t));
+  if (!Number.isFinite(ageSeconds) || ageSeconds > 300) throw new Error("Stripe signature is too old");
+}
+
+async function confirmPaidOrder(orderId) {
+  const updated = database.updateOrderPaymentStatus(orderId, "Paid");
+  if (!updated) return null;
+  if (updated.confirmationEmailSent) {
+    return { order: updated, emailResult: { skipped: true, reason: "already-sent" } };
+  }
+  const invoicePdf = createFrenchInvoicePdf(updated);
+  const emailResult = await sendEmail(
+    updated.customer.email,
+    `Facture Idukki Spices ${updated.id}`,
+    frenchInvoiceEmail(updated),
+    [{ filename: `facture-${updated.id}.pdf`, content: invoicePdf }]
+  );
+  const confirmed = database.updateOrderPaymentStatus(updated.id, "Paid", {
+    confirmationEmailSent: true,
+    confirmationEmailSentAt: new Date().toISOString(),
+    confirmationEmailResult: emailResult
+  });
+  return { order: confirmed, emailResult };
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -401,6 +445,18 @@ function readBody(req) {
         reject(error);
       }
     });
+  });
+}
+
+function readRawBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+      if (body.length > 1_000_000) req.destroy();
+    });
+    req.on("end", () => resolve(body));
+    req.on("error", reject);
   });
 }
 
@@ -472,7 +528,15 @@ async function handleApi(req, res, url) {
     if (!email) return sendJson(res, 401, { error: "Account login required" });
     const account = database.getCustomerByIdentity(email);
     if (!account) return sendJson(res, 404, { error: "Account not found" });
-    return sendJson(res, 200, database.getOrders().filter((order) => order.customerId && order.customerId === account.id));
+    const accountCreatedAt = Date.parse(account.createdAt || "");
+    return sendJson(res, 200, database.getOrders().filter((order) => {
+      if (order.customerId) return order.customerId === account.id;
+      const orderCreatedAt = Date.parse(order.createdAt || "");
+      return order.customerEmail === account.email
+        && Number.isFinite(accountCreatedAt)
+        && Number.isFinite(orderCreatedAt)
+        && orderCreatedAt >= accountCreatedAt;
+    }));
   }
 
   if (url.pathname === "/api/account/profile" && req.method === "PUT") {
@@ -546,27 +610,30 @@ async function handleApi(req, res, url) {
     const body = await readBody(req);
     const orderId = String(body?.orderId || "");
     await verifyStripeCheckoutSession(body?.sessionId, orderId);
-    const updated = database.updateOrderPaymentStatus(orderId, "Paid");
-    if (!updated) return sendJson(res, 404, { error: "Order not found" });
-    if (updated.confirmationEmailSent) {
-      return sendJson(res, 200, { ok: true, order: updated, emailResult: { skipped: true, reason: "already-sent" } });
-    }
     try {
-      const invoicePdf = createFrenchInvoicePdf(updated);
-      const emailResult = await sendEmail(
-        updated.customer.email,
-        `Facture Idukki Spices ${updated.id}`,
-        frenchInvoiceEmail(updated),
-        [{ filename: `facture-${updated.id}.pdf`, content: invoicePdf }]
-      );
-      const confirmed = database.updateOrderPaymentStatus(updated.id, "Paid", {
-        confirmationEmailSent: true,
-        confirmationEmailSentAt: new Date().toISOString(),
-        confirmationEmailResult: emailResult
-      });
-      return sendJson(res, 200, { ok: true, order: confirmed, emailResult });
+      const confirmed = await confirmPaidOrder(orderId);
+      if (!confirmed) return sendJson(res, 404, { error: "Order not found" });
+      return sendJson(res, 200, { ok: true, order: confirmed.order, emailResult: confirmed.emailResult });
     } catch (error) {
+      const updated = database.updateOrderPaymentStatus(orderId, "Paid");
       return sendJson(res, 200, { ok: true, order: updated, warning: error.message });
+    }
+  }
+
+  if (url.pathname === "/api/stripe/webhook" && req.method === "POST") {
+    const rawBody = await readRawBody(req);
+    try {
+      verifyStripeWebhook(rawBody, req.headers["stripe-signature"]);
+      const event = JSON.parse(rawBody);
+      if (event.type === "checkout.session.completed") {
+        const session = event.data?.object || {};
+        if (session.payment_status === "paid" && session.metadata?.order_id) {
+          await confirmPaidOrder(session.metadata.order_id);
+        }
+      }
+      return sendJson(res, 200, { received: true });
+    } catch (error) {
+      return sendJson(res, 400, { error: error.message });
     }
   }
 

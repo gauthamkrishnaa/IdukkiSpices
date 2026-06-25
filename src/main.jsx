@@ -376,7 +376,9 @@ function useAddressSuggestions(value) {
 function App() {
   const [page, setPage] = useState(pageFromPath());
   const [products, setProducts] = useState([]);
-  const [cart, setCart] = useState(() => readJsonStorage(localStorage, cartKey, {}));
+  const [cart, setCart] = useState(() => (
+    sessionStorage.getItem(customerKey) ? readJsonStorage(localStorage, cartKey, {}) : {}
+  ));
   const [customer, setCustomer] = useState(() => readJsonStorage(sessionStorage, customerDataKey, null));
   const [lang, setLang] = useState(() => localStorage.getItem("idukki-language") || "en");
   const [theme, setTheme] = useState(() => localStorage.getItem(themeKey) || "light");
@@ -400,6 +402,12 @@ function App() {
   useEffect(() => {
     localStorage.setItem(cartKey, JSON.stringify(cart));
   }, [cart]);
+
+  useEffect(() => {
+    if (customer) return;
+    localStorage.removeItem(cartKey);
+    setCart({});
+  }, [customer]);
 
   const go = (next) => {
     const path = next === "index" ? "/" : `/${next}.html`;
@@ -453,7 +461,7 @@ function App() {
     cart: <Cart {...props} />,
     checkout: <Checkout {...props} />,
     auth: <Auth setCustomer={setCustomer} go={go} />,
-    account: <Account customer={customer} setCustomer={setCustomer} go={go} lang={lang} theme={theme} setTheme={setTheme} />,
+    account: <Account customer={customer} setCustomer={setCustomer} setCart={setCart} go={go} lang={lang} theme={theme} setTheme={setTheme} />,
     admin: <Admin products={products} setProducts={setProducts} />,
     invoice: <Invoice />,
     "payment-success": <PaymentSuccess go={go} />,
@@ -929,7 +937,7 @@ function PhoneInput({ country, setCountry, value, onChange }) {
   );
 }
 
-function Account({ customer, setCustomer, go, lang, theme, setTheme }) {
+function Account({ customer, setCustomer, setCart, go, lang, theme, setTheme }) {
   const [orders, setOrders] = useState([]);
   const [orderError, setOrderError] = useState("");
   const [section, setSection] = useState(() => sessionStorage.getItem(accountSectionKey) || "profile");
@@ -944,6 +952,14 @@ function Account({ customer, setCustomer, go, lang, theme, setTheme }) {
   }));
   const [profileNote, setProfileNote] = useState("");
   const isFrench = lang === "fr";
+  const clearCustomerSession = () => {
+    sessionStorage.removeItem(customerKey);
+    sessionStorage.removeItem(customerDataKey);
+    sessionStorage.removeItem(accountSectionKey);
+    localStorage.removeItem(cartKey);
+    setCart({});
+    setCustomer(null);
+  };
   useEffect(() => {
     if (customer) {
       api("/api/account/orders")
@@ -1003,10 +1019,7 @@ function Account({ customer, setCustomer, go, lang, theme, setTheme }) {
   const deactivateAccount = async () => {
     try {
       await api("/api/account/profile", { method: "DELETE", body: JSON.stringify({ otp: deactivateOtp }) });
-      sessionStorage.removeItem(customerKey);
-      sessionStorage.removeItem(customerDataKey);
-      sessionStorage.removeItem(accountSectionKey);
-      setCustomer(null);
+      clearCustomerSession();
       go("index");
     } catch (error) {
       setProfileNote(error.message);
@@ -1026,10 +1039,7 @@ function Account({ customer, setCustomer, go, lang, theme, setTheme }) {
           <button className={section === "settings" ? "active" : ""} onClick={() => setSection("settings")} type="button"><ShieldCheck size={18} /> Account settings</button>
         </div>
         <button className="ghost full" onClick={() => {
-          sessionStorage.removeItem(customerKey);
-          sessionStorage.removeItem(customerDataKey);
-          sessionStorage.removeItem(accountSectionKey);
-          setCustomer(null);
+          clearCustomerSession();
           go("index");
         }} type="button"><LogOut size={18} /> {isFrench ? "Déconnexion" : "Logout"}</button>
       </aside>

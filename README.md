@@ -25,6 +25,7 @@ Copy `.env.example` to `.env` and fill the required values:
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD_HASH`
 - `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
 - `RESEND_API_KEY`
 - `EMAIL_FROM`
 

@@ -1,71 +1,13 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Cart | Idukki Spices</title>
-    <meta name="description" content="Review your Idukki Spices cart.">
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Idukki Spices ecommerce store for Kerala-inspired whole spices.">
+    <title>Idukki Spices</title>
   </head>
   <body>
-    <header class="site-header">
-      <nav class="nav" aria-label="Main navigation">
-        <a class="brand" href="index.html"><img class="brand-logo" src="assets/idukki-spices-logo.jpeg" alt="Idukki Spices logo"><span>Idukki Spices</span></a>
-        <button class="nav-toggle" type="button" data-nav-toggle aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
-        <div class="nav-links" data-nav-links>
-          <a href="index.html">Home</a>
-          <a href="about.html">About</a>
-          <a href="shop.html">Shop</a>
-          <a class="cart-link active" href="cart.html">Cart <span class="cart-count" data-cart-count>0</span></a>
-          <a href="account.html" data-account-link>Account</a>
-          <a href="contact.html">Contact</a>
-        </div>
-      </nav>
-    </header>
-
-    <main>
-      <section class="page-hero">
-        <div class="section">
-          <p class="eyebrow">Cart</p>
-          <h1>Your spice order</h1>
-          <p>Review your products, adjust quantities, and continue to checkout when the order looks right.</p>
-          <div class="cart-steps" aria-label="Checkout steps">
-            <span class="active">Cart</span>
-            <span>Details</span>
-            <span>Payment</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="section cart-layout">
-        <div class="cart-items" data-cart-items></div>
-        <aside class="summary" data-cart-summary aria-label="Cart summary"></aside>
-      </section>
-
-      <section class="band">
-        <div class="section cart-benefits">
-          <article>
-            <strong>Fresh packs</strong>
-            <span>Carefully packed spices with clear product labels.</span>
-          </article>
-          <article>
-            <strong>Easy checkout</strong>
-            <span>Move from cart to delivery and payment details in one step.</span>
-          </article>
-          <article>
-            <strong>Local support</strong>
-            <span>Contact Idukki Spices for custom quantities or delivery questions.</span>
-          </article>
-        </div>
-      </section>
-    </main>
-
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <strong>Idukki Spices</strong>
-        <a href="shop.html">Continue shopping</a>
-      </div>
-    </footer>
-    <script src="script.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
