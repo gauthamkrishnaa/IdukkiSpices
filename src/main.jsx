@@ -488,17 +488,22 @@ function App() {
 
 function Header({ go, page, cartCount, customer, lang, setLang }) {
   const links = [["index", "Home"], ["about", "About"], ["shop", "Shop"], ["cart", "Cart"], ["auth", customer ? "My account" : "Login"]];
+  const pathFor = (id) => id === "index" ? "/" : `/${id}.html`;
+  const follow = (event, id) => {
+    event.preventDefault();
+    go(id === "auth" && customer ? "account" : id);
+  };
   return (
     <header className="topbar">
-      <button className="brand" onClick={() => go("index")} type="button">
+      <a className="brand" href="/" onClick={(event) => follow(event, "index")}>
         <img src="/assets/idukki-spices-logo.jpeg" alt="Idukki Spices" />
         <span>Idukki Spices</span>
-      </button>
+      </a>
       <nav>
         {links.map(([id, label]) => (
-          <button className={page === id ? "active" : ""} key={id} onClick={() => go(id === "auth" && customer ? "account" : id)} type="button">
+          <a className={page === id ? "active" : ""} href={pathFor(id === "auth" && customer ? "account" : id)} key={id} onClick={(event) => follow(event, id)}>
             {label}{id === "cart" && <b>{cartCount}</b>}
-          </button>
+          </a>
         ))}
         <div className="language-toggle" aria-label="Language">
           <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")} type="button">EN</button>

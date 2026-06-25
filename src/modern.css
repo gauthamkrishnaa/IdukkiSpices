@@ -200,6 +200,7 @@ button:active {
 }
 
 :root[data-theme="dark"] nav button,
+:root[data-theme="dark"] nav a,
 :root[data-theme="dark"] footer,
 :root[data-theme="dark"] .summary-card p,
 :root[data-theme="dark"] .product-card p,
@@ -236,6 +237,7 @@ nav {
 }
 
 nav button,
+nav a,
 footer button {
   display: inline-flex;
   align-items: center;
@@ -247,9 +249,13 @@ footer button {
   background: transparent;
   color: #493d34;
   font-weight: 850;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 nav button.active,
+nav a.active,
+nav a:hover,
 nav button:hover {
   border-color: rgba(47, 111, 68, 0.2);
   background: #ecf4e8;
