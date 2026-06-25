@@ -428,6 +428,7 @@ function App() {
     const showButtonFeedback = (event) => {
       const button = event.target.closest?.("button");
       if (!button || button.disabled || button.classList.contains("no-click-feedback")) return;
+      if (button.closest(".counter, .buy-controls, .cart-line")) return;
       button.classList.add("button-feedback-loading");
       setPageBusy(true);
       window.clearTimeout(busyTimer.current);
@@ -659,7 +660,7 @@ function ProductCard({ product, cart, addToCart, onView, lang }) {
           <strong>{money(product.price)}</strong>
           {cartQty > 0 && <p className="in-cart">{cartQty} in cart</p>}
         </div>
-        <div className="buy-controls" onClick={(event) => event.stopPropagation()}>
+        <div className="buy-controls" onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
           <div className="counter">
             <button disabled={!selectedQty} onClick={() => setSelectedQty((qty) => Math.max(0, qty - 1))} type="button" aria-label={`Decrease selected ${displayProduct.name}`}>-</button>
             <span>{selectedQty}</span>

@@ -45,6 +45,7 @@ textarea {
 button {
   cursor: pointer;
   position: relative;
+  touch-action: manipulation;
   transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease, background-color 0.16s ease;
 }
 
@@ -717,6 +718,7 @@ h3 {
   font-size: 1.65rem;
   font-weight: 950;
   line-height: 1;
+  touch-action: manipulation;
 }
 
 .counter button:disabled {
