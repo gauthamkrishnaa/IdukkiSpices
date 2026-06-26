@@ -24,7 +24,7 @@ import {
 import "./modern.css";
 
 const money = (value) => `€${Number(value || 0).toFixed(2)}`;
-const MIN_ORDER_VALUE = 20;
+const MIN_ORDER_VALUE = 1;
 const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_FEE = 4.99;
 const cartKey = "idukki-react-cart";
@@ -170,9 +170,9 @@ const translations = {
   "Shipping": "Livraison",
   "Free": "Gratuite",
   "Total": "Total",
-  "Minimum order value is €20.": "Le minimum de commande est de 20 €.",
+  "Minimum order value is €1.": "Le minimum de commande est de 1 €.",
   "Free delivery for orders over €50. Shipping is €4.99 below that.": "Livraison gratuite pour les commandes de plus de 50 €. La livraison coûte 4,99 € en dessous.",
-  "Add more spices to reach the €20 minimum order.": "Ajoutez plus d'épices pour atteindre le minimum de commande de 20 €.",
+  "Add more spices to reach the €1 minimum order.": "Ajoutez plus d'épices pour atteindre le minimum de commande de 1 €.",
   "You have free delivery on this order.": "La livraison est gratuite pour cette commande.",
   "Checkout": "Paiement",
   "Clear cart": "Vider le panier",
@@ -547,7 +547,7 @@ function HomeDeliveryBanner({ go, lang }) {
         <Truck size={24} />
         <span>{isFrench ? "Livraison" : "Delivery"}</span>
       </div>
-      <strong>{isFrench ? "Minimum de commande 20 €" : "Minimum order €20"}</strong>
+      <strong>{isFrench ? "Minimum de commande 1 €" : "Minimum order €1"}</strong>
       <strong>{isFrench ? "Livraison gratuite dès 50 €" : "Free delivery over €50"}</strong>
       <p>{isFrench ? "Livraison standard à 4,99 € sous 50 €." : "Standard shipping is €4.99 below €50."}</p>
       <button className="primary small" onClick={() => go("shop")} type="button">
@@ -721,7 +721,7 @@ function Cart({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, addT
         <p><span>Subtotal</span><strong>{money(cartTotal)}</strong></p>
         <p><span>Shipping</span><ShippingPrice subtotal={cartTotal} shippingFee={shippingFee} lang={lang} /></p>
         <p className="total"><span>Total</span><strong>{money(orderTotal)}</strong></p>
-        {!canCheckout && cartItems.length > 0 && <p className="notice compact">Add more spices to reach the €20 minimum order.</p>}
+        {!canCheckout && cartItems.length > 0 && <p className="notice compact">Add more spices to reach the €1 minimum order.</p>}
         <button className="primary" disabled={!cartItems.length || !canCheckout} onClick={() => go("checkout")} type="button"><Lock size={18} /> Checkout</button>
         <button className="ghost full" onClick={() => setCart({})} type="button">Clear cart</button>
       </aside>
@@ -741,8 +741,8 @@ function DeliveryNotice({ subtotal, lang }) {
           {subtotal >= FREE_SHIPPING_THRESHOLD
             ? (isFrench ? "La livraison est gratuite pour cette commande." : "You have free delivery on this order.")
             : (isFrench
-              ? `Minimum de commande : 20 €.${remaining > 0 ? ` Ajoutez encore ${money(remaining)} pour commander.` : ""}`
-              : `Minimum order value is €20.${remaining > 0 ? ` Add ${money(remaining)} more to checkout.` : ""}`)}
+              ? `Minimum de commande : 1 €.${remaining > 0 ? ` Ajoutez encore ${money(remaining)} pour commander.` : ""}`
+              : `Minimum order value is €1.${remaining > 0 ? ` Add ${money(remaining)} more to checkout.` : ""}`)}
         </p>
       </div>
     </div>
@@ -773,7 +773,7 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
   const submit = async (event) => {
     event.preventDefault();
     if (!cartItems.length) return setNote("Add products before checkout.");
-    if (!canCheckout) return setNote("Add more spices to reach the €20 minimum order.");
+    if (!canCheckout) return setNote("Add more spices to reach the €1 minimum order.");
     const order = {
       id: `IDK-${Date.now().toString().slice(-6)}`,
       customer: form,

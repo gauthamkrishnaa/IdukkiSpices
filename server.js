@@ -38,7 +38,7 @@ const publicBaseUrl = process.env.PUBLIC_BASE_URL || `http://${host}:${port}`;
 const sessionSecret = requiredEnv("SESSION_SECRET");
 const adminSessions = new Set();
 const otpChallenges = new Map();
-const MIN_ORDER_VALUE = 20;
+const MIN_ORDER_VALUE = 1;
 const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_FEE = 4.99;
 
@@ -660,7 +660,7 @@ async function handleApi(req, res, url) {
       const incomingOrder = await readBody(req);
       const charges = calculateOrderCharges(incomingOrder?.items || []);
       if (charges.subtotal < MIN_ORDER_VALUE) {
-        return sendJson(res, 400, { error: "Minimum order value is €20." });
+        return sendJson(res, 400, { error: "Minimum order value is €1." });
       }
       const savedOrder = database.saveOrder({ ...incomingOrder, ...charges });
       try {
