@@ -26,7 +26,7 @@ import "./modern.css";
 const money = (value) => `€${Number(value || 0).toFixed(2)}`;
 const MIN_ORDER_VALUE = 1;
 const FREE_SHIPPING_THRESHOLD = 50;
-const SHIPPING_FEE = 4.99;
+const SHIPPING_FEE = 0;
 const cartKey = "idukki-react-cart";
 const adminKey = "idukki-admin-session";
 const customerKey = "idukki-customer-session";
@@ -171,7 +171,7 @@ const translations = {
   "Free": "Gratuite",
   "Total": "Total",
   "Minimum order value is €1.": "Le minimum de commande est de 1 €.",
-  "Free delivery for orders over €50. Shipping is €4.99 below that.": "Livraison gratuite pour les commandes de plus de 50 €. La livraison coûte 4,99 € en dessous.",
+  "Free delivery for all test orders.": "Livraison gratuite pour toutes les commandes de test.",
   "Add more spices to reach the €1 minimum order.": "Ajoutez plus d'épices pour atteindre le minimum de commande de 1 €.",
   "You have free delivery on this order.": "La livraison est gratuite pour cette commande.",
   "Checkout": "Paiement",
@@ -549,7 +549,7 @@ function HomeDeliveryBanner({ go, lang }) {
       </div>
       <strong>{isFrench ? "Minimum de commande 1 €" : "Minimum order €1"}</strong>
       <strong>{isFrench ? "Livraison gratuite dès 50 €" : "Free delivery over €50"}</strong>
-      <p>{isFrench ? "Livraison standard à 4,99 € sous 50 €." : "Standard shipping is €4.99 below €50."}</p>
+      <p>{isFrench ? "Livraison gratuite temporaire pour le test." : "Temporary free shipping for testing."}</p>
       <button className="primary small" onClick={() => go("shop")} type="button">
         {isFrench ? "Voir la boutique" : "Shop now"}
       </button>
@@ -736,7 +736,7 @@ function DeliveryNotice({ subtotal, lang }) {
     <div className="delivery-notice">
       <Truck size={20} />
       <div>
-        <strong>{isFrench ? "Livraison gratuite pour les commandes de plus de 50 €. Livraison à 4,99 € en dessous." : "Free delivery for orders over €50. Shipping is €4.99 below that."}</strong>
+        <strong>{isFrench ? "Livraison gratuite temporaire pour toutes les commandes de test." : "Temporary free delivery for all test orders."}</strong>
         <p>
           {subtotal >= FREE_SHIPPING_THRESHOLD
             ? (isFrench ? "La livraison est gratuite pour cette commande." : "You have free delivery on this order.")

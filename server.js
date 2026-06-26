@@ -40,7 +40,7 @@ const adminSessions = new Set();
 const otpChallenges = new Map();
 const MIN_ORDER_VALUE = 1;
 const FREE_SHIPPING_THRESHOLD = 50;
-const SHIPPING_FEE = 4.99;
+const SHIPPING_FEE = 0;
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
