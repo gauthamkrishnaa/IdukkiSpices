@@ -874,6 +874,13 @@ h3 {
   margin-top: 2px;
 }
 
+.auth-box .address-suggestions,
+.checkout-grid form .address-suggestions,
+.profile-edit .address-suggestions {
+  position: static;
+  max-height: 180px;
+}
+
 .phone-input {
   display: grid;
   grid-template-columns: minmax(210px, 0.55fr) 1fr;

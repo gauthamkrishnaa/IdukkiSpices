@@ -726,7 +726,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname.startsWith("/api/")) return await handleApi(req, res, url);
     serveStatic(req, res, url);
   } catch (error) {
-    sendJson(res, 500, { error: "Server error", detail: error.message });
+    sendJson(res, error.statusCode || 500, { error: error.statusCode ? error.message : "Server error", detail: error.message });
   }
 });
 

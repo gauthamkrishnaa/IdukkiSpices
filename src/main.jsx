@@ -429,6 +429,7 @@ function App() {
       const button = event.target.closest?.("button");
       if (!button || button.disabled || button.classList.contains("no-click-feedback")) return;
       if (button.closest(".counter, .buy-controls, .cart-line")) return;
+      if (button.closest("form, .auth-box")) return;
       button.classList.add("button-feedback-loading");
       setPageBusy(true);
       window.clearTimeout(busyTimer.current);
@@ -851,22 +852,29 @@ function Auth({ setCustomer, go }) {
   const [otp, setOtp] = useState("");
   const [signup, setSignup] = useState({ name: "", email: "", phone: "", country: "+33", address: "" });
   const [note, setNote] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
   const phone = (code, value) => `${code}${String(value).replace(/\D/g, "").replace(/^0+/, "")}`;
 
   const requestOtp = async () => {
     const value = method === "phone" ? phone(country, localPhone) : identity.trim().toLowerCase();
     try {
+      setAuthBusy(true);
+      setNote("Sending OTP...");
       await api("/api/auth/request-otp", { method: "POST", body: JSON.stringify({ identity: value, method }) });
       setNote("OTP sent. Check your email or phone.");
     } catch (error) {
       setNote(error.message);
+    } finally {
+      setAuthBusy(false);
     }
   };
 
   const verify = async (event) => {
-    event.preventDefault();
+    event?.preventDefault?.();
     const value = method === "phone" ? phone(country, localPhone) : identity.trim().toLowerCase();
     try {
+      setAuthBusy(true);
+      setNote("Verifying OTP...");
       const data = await api("/api/auth/verify-otp", { method: "POST", body: JSON.stringify({ identity: value, otp }) });
       sessionStorage.setItem(customerKey, data.token);
       sessionStorage.setItem(customerDataKey, JSON.stringify(data.account));
@@ -874,19 +882,25 @@ function Auth({ setCustomer, go }) {
       go("index");
     } catch (error) {
       setNote(error.message);
+    } finally {
+      setAuthBusy(false);
     }
   };
 
   const createAccount = async (event) => {
-    event.preventDefault();
+    event?.preventDefault?.();
     const body = { ...signup, phone: phone(signup.country, signup.phone) };
     try {
+      setAuthBusy(true);
+      setNote("Creating account...");
       await api("/api/accounts/register", { method: "POST", body: JSON.stringify(body) });
       setMode("login");
       setIdentity(body.email);
       setNote("Account created. Send OTP to login.");
     } catch (error) {
       setNote(error.message);
+    } finally {
+      setAuthBusy(false);
     }
   };
 
@@ -909,9 +923,9 @@ function Auth({ setCustomer, go }) {
               {method === "email" ? (
                 <Field label="Email" type="email" value={identity} onChange={setIdentity} placeholder="you@example.com" required />
               ) : <PhoneInput country={country} setCountry={setCountry} value={localPhone} onChange={setLocalPhone} />}
-              <button className="ghost full" onClick={requestOtp} type="button"><Mail size={18} /> Send OTP</button>
+              <button className="ghost full" disabled={authBusy} onClick={requestOtp} type="button"><Mail size={18} /> Send OTP</button>
               <Field label="OTP code" value={otp} onChange={setOtp} placeholder="Enter 6-digit code" required />
-              <button className="primary" type="submit">Verify and login</button>
+              <button className="primary" disabled={authBusy} onClick={verify} type="button">Verify and login</button>
             </form>
           ) : (
             <form onSubmit={createAccount}>
@@ -919,7 +933,7 @@ function Auth({ setCustomer, go }) {
               <Field label="Email" type="email" value={signup.email} onChange={(value) => setSignup({ ...signup, email: value })} required />
               <PhoneInput country={signup.country} setCountry={(value) => setSignup({ ...signup, country: value })} value={signup.phone} onChange={(value) => setSignup({ ...signup, phone: value })} />
               <AddressField value={signup.address} onChange={(value) => setSignup({ ...signup, address: value })} />
-              <button className="primary" type="submit">Create account</button>
+              <button className="primary" disabled={authBusy} onClick={createAccount} type="button">Create account</button>
             </form>
           )}
           {note && <p className="notice">{note}</p>}
