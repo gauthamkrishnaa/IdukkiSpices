@@ -750,13 +750,15 @@ function DeliveryNotice({ subtotal, lang }) {
 }
 
 function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, setCart, customer, lang }) {
+  const checkoutParams = new URLSearchParams(window.location.search);
+  const cancelledOrderId = checkoutParams.get("payment") === "cancelled" ? checkoutParams.get("order") : "";
   const [form, setForm] = useState(() => ({
     name: customer?.name || "",
     email: customer?.email || "",
     phone: customer?.phone || "",
     address: customer?.address || ""
   }));
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(cancelledOrderId ? `Payment was cancelled. Order ${cancelledOrderId} is not confirmed.` : "");
   useEffect(() => {
     if (!customer) return;
     setForm((current) => ({
@@ -801,12 +803,18 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
     <main className="section checkout-grid">
       <form className="panel" onSubmit={submit}>
         <SectionTitle eyebrow="Checkout" title="Delivery details" />
+        {cancelledOrderId && (
+          <div className="payment-cancelled">
+            <strong>Order not confirmed</strong>
+            <p>Your payment was cancelled, so the order has not been confirmed. You can review your details and try payment again.</p>
+          </div>
+        )}
         <DeliveryNotice subtotal={cartTotal} lang={lang} />
         <Field label="Full name" value={form.name} onChange={(value) => update("name", value)} required />
         <Field label="Email" type="email" value={form.email} onChange={(value) => update("email", value)} required />
         <Field label="Phone number" type="tel" value={form.phone} onChange={(value) => update("phone", value)} placeholder="Phone number" required />
         <AddressField value={form.address} onChange={(value) => update("address", value)} required />
-        <button className="primary" type="submit"><CreditCard size={18} /> Pay securely</button>
+        <button className="primary" type="submit"><CreditCard size={18} /> {cancelledOrderId ? "Try payment again" : "Pay securely"}</button>
         {note && <p className="notice">{note}</p>}
       </form>
       <aside className="summary-card">

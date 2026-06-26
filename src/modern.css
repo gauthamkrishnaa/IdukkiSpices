@@ -874,6 +874,26 @@ h3 {
   margin-top: 2px;
 }
 
+.payment-cancelled {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid rgba(151, 55, 34, 0.22);
+  border-radius: 16px;
+  background: #fff0e8;
+  color: #5b2418;
+}
+
+.payment-cancelled strong,
+.payment-cancelled p {
+  margin: 0;
+}
+
+.payment-cancelled strong {
+  font-size: 1.02rem;
+}
+
 .auth-box .address-suggestions,
 .checkout-grid form .address-suggestions,
 .profile-edit .address-suggestions {
