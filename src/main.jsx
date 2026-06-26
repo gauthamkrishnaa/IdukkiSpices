@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   BarChart3,
@@ -383,7 +383,6 @@ function App() {
   const [lang, setLang] = useState(() => localStorage.getItem("idukki-language") || "en");
   const [theme, setTheme] = useState(() => localStorage.getItem(themeKey) || "light");
   const [pageBusy, setPageBusy] = useState(false);
-  const busyTimer = useRef(null);
 
   useEffect(() => {
     api("/api/products").then(setProducts).catch(() => setProducts([]));
@@ -422,25 +421,6 @@ function App() {
     const onPop = () => setPage(pageFromPath());
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, []);
-
-  useEffect(() => {
-    const showButtonFeedback = (event) => {
-      const button = event.target.closest?.("button");
-      if (!button || button.disabled || button.classList.contains("no-click-feedback")) return;
-      if (button.closest(".counter, .buy-controls, .cart-line")) return;
-      if (button.closest("form, .auth-box")) return;
-      button.classList.add("button-feedback-loading");
-      setPageBusy(true);
-      window.clearTimeout(busyTimer.current);
-      window.setTimeout(() => button.classList.remove("button-feedback-loading"), 520);
-      busyTimer.current = window.setTimeout(() => setPageBusy(false), 520);
-    };
-    document.addEventListener("pointerdown", showButtonFeedback, true);
-    return () => {
-      document.removeEventListener("pointerdown", showButtonFeedback, true);
-      window.clearTimeout(busyTimer.current);
-    };
   }, []);
 
   const addToCart = (id, amount = 1) => {
