@@ -624,6 +624,14 @@ async function handleApi(req, res, url) {
     return sendJson(res, 400, { error: "Unknown order action" });
   }
 
+  if (url.pathname === "/api/account/profile" && req.method === "GET") {
+    const email = customerEmailFromToken(req);
+    if (!email) return sendJson(res, 401, { error: "Account login required" });
+    const account = database.getCustomerByIdentity(email);
+    if (!account) return sendJson(res, 404, { error: "Account not found" });
+    return sendJson(res, 200, account);
+  }
+
   if (url.pathname === "/api/account/profile" && req.method === "PUT") {
     const email = customerEmailFromToken(req);
     if (!email) return sendJson(res, 401, { error: "Account login required" });

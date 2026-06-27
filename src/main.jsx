@@ -404,6 +404,29 @@ function App() {
   }, [cart]);
 
   useEffect(() => {
+    if (!customer) return;
+    let active = true;
+    api("/api/account/profile")
+      .then((account) => {
+        if (!active) return;
+        sessionStorage.setItem(customerDataKey, JSON.stringify(account));
+        setCustomer(account);
+      })
+      .catch((error) => {
+        if (!active) return;
+        if (["Account not found", "Account login required"].includes(error.message)) {
+          sessionStorage.removeItem(customerKey);
+          sessionStorage.removeItem(customerDataKey);
+          sessionStorage.removeItem(accountSectionKey);
+          localStorage.removeItem(cartKey);
+          setCustomer(null);
+          setCart({});
+        }
+      });
+    return () => { active = false; };
+  }, [customer?.email]);
+
+  useEffect(() => {
     if (customer) return;
     localStorage.removeItem(cartKey);
     setCart({});
