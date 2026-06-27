@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   BarChart3,
+  Bell,
   CheckCircle2,
   ChevronRight,
   CreditCard,
@@ -1206,6 +1207,7 @@ function Admin({ products, setProducts }) {
   const [password, setPassword] = useState("");
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [note, setNote] = useState("");
   const [activeSection, setActiveSection] = useState("overview");
   const [activeOrderStatus, setActiveOrderStatus] = useState("New order");
@@ -1215,6 +1217,7 @@ function Admin({ products, setProducts }) {
     try {
       setOrders(await api("/api/orders"));
       setCustomers(await api("/api/customers"));
+      setNotifications(await api("/api/admin/notifications"));
     } catch (error) {
       sessionStorage.removeItem(adminKey);
       setToken(null);
@@ -1290,6 +1293,13 @@ function Admin({ products, setProducts }) {
       setNote(error.message);
     }
   };
+  const markNotificationsRead = async () => {
+    try {
+      setNotifications(await api("/api/admin/notifications", { method: "PUT" }));
+    } catch (error) {
+      setNote(error.message);
+    }
+  };
 
   return (
     <main className="admin-shell">
@@ -1313,6 +1323,7 @@ function Admin({ products, setProducts }) {
         <div className="admin-head">
           <SectionTitle eyebrow="Operations" title={adminTabs.find(([id]) => id === activeSection)?.[1] || "Overview"} />
         </div>
+        <AdminNotificationBar notifications={notifications} onMarkRead={markNotificationsRead} />
         {note && <p className="notice compact">{note}</p>}
         {activeSection === "overview" && (
           <section className="admin-section-stack">
@@ -1391,6 +1402,44 @@ function Admin({ products, setProducts }) {
         )}
       </section>
     </main>
+  );
+}
+
+function AdminNotificationBar({ notifications, onMarkRead }) {
+  const unread = notifications.filter((item) => !Number(item.isRead)).length;
+  const visible = notifications.slice(0, 3);
+  return (
+    <section className="admin-notification-bar">
+      <div className="notification-bar-head">
+        <div>
+          <Bell size={18} />
+          <strong>Customer updates</strong>
+          {unread > 0 && <span>{unread} new</span>}
+        </div>
+        <button className="ghost small" disabled={!notifications.length || unread === 0} onClick={onMarkRead} type="button">Mark read</button>
+      </div>
+      {visible.length ? (
+        <div className="notification-list">
+          {visible.map((item) => {
+            const created = item.createdAt ? new Date(item.createdAt).toLocaleString(undefined, {
+              day: "2-digit",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit"
+            }) : "";
+            return (
+              <article className={Number(item.isRead) ? "" : "unread"} key={item.id}>
+                <div>
+                  <strong>{item.title}</strong>
+                  <p>{item.body}</p>
+                </div>
+                <span>{created}</span>
+              </article>
+            );
+          })}
+        </div>
+      ) : <p className="muted">No customer updates yet.</p>}
+    </section>
   );
 }
 

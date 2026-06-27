@@ -32,3 +32,5 @@ services:
         sync: false
       - key: EMAIL_FROM
         sync: false
+      - key: COMPANY_EMAIL
+        sync: false

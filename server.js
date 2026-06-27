@@ -172,6 +172,45 @@ function orderNotificationEmail(order, type) {
         "Merci,",
         "Idukki Spices"
       ]
+    },
+    packed: {
+      subject: `Commande préparée ${order.id}`,
+      lines: [
+        `Bonjour ${customerName},`,
+        "",
+        `Votre commande ${order.id} est maintenant préparée.`,
+        "",
+        "Elle sera remise au transporteur prochainement.",
+        "",
+        "Merci,",
+        "Idukki Spices"
+      ]
+    },
+    shipped: {
+      subject: `Commande expédiée ${order.id}`,
+      lines: [
+        `Bonjour ${customerName},`,
+        "",
+        `Votre commande ${order.id} a été expédiée.`,
+        "",
+        "Vous recevrez votre colis selon les délais du transporteur.",
+        "",
+        "Merci,",
+        "Idukki Spices"
+      ]
+    },
+    delivered: {
+      subject: `Commande livrée ${order.id}`,
+      lines: [
+        `Bonjour ${customerName},`,
+        "",
+        `Votre commande ${order.id} est indiquée comme livrée.`,
+        "",
+        "Nous espérons que vous apprécierez vos épices Idukki Spices.",
+        "",
+        "Merci,",
+        "Idukki Spices"
+      ]
     }
   };
   const message = messages[type];
@@ -190,6 +229,33 @@ async function sendOrderNotification(order, type) {
   } catch (error) {
     return { sent: false, error: error.message };
   }
+}
+
+function companyEmail() {
+  return process.env.COMPANY_EMAIL || process.env.ADMIN_EMAIL || adminEmail;
+}
+
+function customerActionNotification({ type, title, body, order = null, customer = null }) {
+  const orderId = order?.id || "";
+  const customerEmail = customer?.email || order?.customer?.email || order?.customerEmail || "";
+  database.createAdminNotification({ type, title, body, orderId, customerEmail });
+  return sendEmail(companyEmail(), `Idukki Spices admin: ${title}`, [
+    title,
+    "",
+    body,
+    orderId ? `Order: ${orderId}` : "",
+    customerEmail ? `Customer: ${customerEmail}` : "",
+    "",
+    "Open the admin dashboard to review this update."
+  ].filter(Boolean).join("\n")).catch((error) => ({ sent: false, error: error.message }));
+}
+
+function deliveryNotificationType(status) {
+  return {
+    Packed: "packed",
+    Shipped: "shipped",
+    Delivered: "delivered"
+  }[status] || "";
 }
 
 function pdfText(value) {
@@ -600,6 +666,16 @@ async function handleApi(req, res, url) {
     return sendJson(res, 401, { ok: false, error: "Invalid admin credentials" });
   }
 
+  if (url.pathname === "/api/admin/notifications") {
+    if (!requireAdmin(req, res)) return;
+    if (req.method === "GET") {
+      return sendJson(res, 200, database.getAdminNotifications(30));
+    }
+    if (req.method === "PUT") {
+      return sendJson(res, 200, database.markAdminNotificationsRead());
+    }
+  }
+
   if (url.pathname === "/api/accounts/register" && req.method === "POST") {
     const body = await readBody(req);
     if (!validEmail(body?.email)) return sendJson(res, 400, { error: "Enter a valid email address, for example you@example.com." });
@@ -608,6 +684,12 @@ async function handleApi(req, res, url) {
     body.email = normalizeEmail(body.email);
     body.phone = normalizePhone(body.phone);
     const account = database.registerCustomer(body);
+    await customerActionNotification({
+      type: "account-created",
+      title: "New customer account",
+      body: `${account.name || "Customer"} created an account.`,
+      customer: account
+    });
     return sendJson(res, 201, account);
   }
 
@@ -698,6 +780,12 @@ async function handleApi(req, res, url) {
       if (status === "Cancelled") return sendJson(res, 200, order);
       const updated = database.updateOrder(order.id, { deliveryStatus: "Cancelled", cancelledAt: new Date().toISOString() });
       const emailResult = await sendOrderNotification(updated, "cancelled");
+      await customerActionNotification({
+        type: "order-cancelled",
+        title: "Customer cancelled order",
+        body: `${updated.customer?.name || "Customer"} cancelled order ${updated.id}.`,
+        order: updated
+      });
       const notified = database.updateOrder(updated.id, {
         cancellationEmailSentAt: new Date().toISOString(),
         cancellationEmailResult: emailResult
@@ -714,6 +802,12 @@ async function handleApi(req, res, url) {
       }
       const updated = database.updateOrder(order.id, { paymentStatus: "Refund requested", refundRequestedAt: new Date().toISOString() });
       const emailResult = await sendOrderNotification(updated, "refundRequested");
+      await customerActionNotification({
+        type: "refund-requested",
+        title: "Customer requested refund",
+        body: `${updated.customer?.name || "Customer"} requested a refund for order ${updated.id}.`,
+        order: updated
+      });
       const notified = database.updateOrder(updated.id, {
         refundRequestEmailSentAt: new Date().toISOString(),
         refundRequestEmailResult: emailResult
@@ -744,6 +838,12 @@ async function handleApi(req, res, url) {
       address: String(body?.address || "").trim()
     });
     if (!updated) return sendJson(res, 404, { error: "Account not found" });
+    await customerActionNotification({
+      type: "profile-updated",
+      title: "Customer profile updated",
+      body: `${updated.name || "Customer"} updated saved account details.`,
+      customer: updated
+    });
     return sendJson(res, 200, updated);
   }
 
@@ -784,6 +884,12 @@ async function handleApi(req, res, url) {
     const deleted = database.deleteCustomerByEmail(email);
     if (!deleted) return sendJson(res, 404, { error: "Account not found" });
     database.deleteOtpChallenge("deactivate", identity);
+    await customerActionNotification({
+      type: "account-deactivated",
+      title: "Customer account deactivated",
+      body: `${email} deactivated their customer account.`,
+      customer: { email }
+    });
     return sendJson(res, 200, { ok: true });
   }
 
@@ -870,7 +976,23 @@ async function handleApi(req, res, url) {
     if (req.method === "PUT") {
       if (!requireAdmin(req, res)) return;
       const body = await readBody(req);
-      return sendJson(res, 200, database.saveOrders(Array.isArray(body) ? body : []));
+      const incomingOrders = Array.isArray(body) ? body : [];
+      const previousOrders = new Map(database.getOrders().map((order) => [order.id, order]));
+      database.saveOrders(incomingOrders);
+      for (const order of incomingOrders) {
+        const previous = previousOrders.get(order.id);
+        const previousStatus = previous?.deliveryStatus || "New order";
+        const nextStatus = order.deliveryStatus || "New order";
+        const notificationType = previousStatus !== nextStatus ? deliveryNotificationType(nextStatus) : "";
+        if (!notificationType) continue;
+        const savedOrder = database.getOrderById(order.id);
+        const emailResult = await sendOrderNotification(savedOrder, notificationType);
+        database.updateOrder(order.id, {
+          [`${notificationType}EmailSentAt`]: new Date().toISOString(),
+          [`${notificationType}EmailResult`]: emailResult
+        });
+      }
+      return sendJson(res, 200, database.getOrders());
     }
     if (req.method === "POST") {
       const incomingOrder = await readBody(req);
@@ -879,6 +1001,12 @@ async function handleApi(req, res, url) {
         return sendJson(res, 400, { error: "Minimum order value is €1." });
       }
       const savedOrder = database.saveOrder({ ...incomingOrder, ...charges });
+      await customerActionNotification({
+        type: "new-order",
+        title: "New order received",
+        body: `${savedOrder.customer?.name || "Customer"} placed order ${savedOrder.id} for €${Number(savedOrder.total || 0).toFixed(2)}.`,
+        order: savedOrder
+      });
       try {
         const stripeSession = await createStripeCheckout(savedOrder);
         database.updateOrder(savedOrder.id, { stripeSessionId: stripeSession.id || "" });

@@ -154,6 +154,17 @@ function initDatabase() {
       created_at TEXT NOT NULL,
       PRIMARY KEY (purpose, identity)
     );
+
+    CREATE TABLE IF NOT EXISTS admin_notifications (
+      id TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      order_id TEXT,
+      customer_email TEXT,
+      is_read INTEGER NOT NULL DEFAULT 0
+    );
   `);
 
   const count = one("SELECT COUNT(*) AS count FROM products;")?.count || 0;
@@ -323,6 +334,33 @@ function deleteOtpChallenge(purpose, identity) {
   `);
 }
 
+function createAdminNotification({ type, title, body, orderId = "", customerEmail = "" }) {
+  const id = `NOT-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  run(`
+    INSERT INTO admin_notifications
+      (id, created_at, type, title, body, order_id, customer_email, is_read)
+    VALUES
+      (${sqlValue(id)}, ${sqlValue(new Date().toISOString())}, ${sqlValue(type)},
+       ${sqlValue(title)}, ${sqlValue(body)}, ${sqlValue(orderId)}, ${sqlValue(customerEmail)}, 0);
+  `);
+  return id;
+}
+
+function getAdminNotifications(limit = 30) {
+  return all(`
+    SELECT id, created_at AS createdAt, type, title, body, order_id AS orderId,
+           customer_email AS customerEmail, is_read AS isRead
+    FROM admin_notifications
+    ORDER BY created_at DESC
+    LIMIT ${sqlValue(Number(limit || 30))};
+  `);
+}
+
+function markAdminNotificationsRead() {
+  run("UPDATE admin_notifications SET is_read = 1;");
+  return getAdminNotifications();
+}
+
 const frenchProductNames = {
   "green-cardamom-50": "Cardamome verte 50g",
   "green-cardamom-100": "Cardamome verte 100g",
@@ -454,5 +492,8 @@ module.exports = {
   saveOtpChallenge,
   getOtpChallenge,
   deleteOtpChallenge,
+  createAdminNotification,
+  getAdminNotifications,
+  markAdminNotificationsRead,
   getOutbox
 };

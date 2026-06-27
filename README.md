@@ -28,6 +28,7 @@ Copy `.env.example` to `.env` and fill the required values:
 - `STRIPE_WEBHOOK_SECRET`
 - `SENDGRID_API_KEY`
 - `EMAIL_FROM`
+- `COMPANY_EMAIL`
 
 ## Deploy
 
