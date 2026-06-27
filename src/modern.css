@@ -1239,6 +1239,12 @@ h3 {
   cursor: not-allowed;
 }
 
+.danger-button.small {
+  min-height: 42px;
+  padding: 9px 13px;
+  font-size: 0.9rem;
+}
+
 .danger-confirm {
   display: flex;
   flex-wrap: wrap;
@@ -1652,7 +1658,7 @@ h3 {
 
 .admin-order-controls {
   display: grid;
-  grid-template-columns: 1fr 1fr auto auto;
+  grid-template-columns: 1fr 1fr auto auto auto;
   gap: 8px;
 }
 
@@ -1676,7 +1682,7 @@ h3 {
 }
 
 .customer-table article {
-  grid-template-columns: 1.1fr 1.2fr 1fr 1.4fr;
+  grid-template-columns: 1.1fr 1.2fr 1fr 1.4fr auto;
   padding: 13px;
   border: 1px solid var(--line);
   border-radius: 16px;

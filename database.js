@@ -184,6 +184,13 @@ function getOrderById(id) {
   return row ? JSON.parse(row.order_json) : null;
 }
 
+function deleteOrderById(id) {
+  const existing = getOrderById(id);
+  if (!existing) return false;
+  run(`DELETE FROM orders WHERE id = ${sqlValue(id)};`);
+  return true;
+}
+
 function updateOrderPaymentStatus(id, paymentStatus, changes = {}) {
   const order = getOrderById(id);
   if (!order) return null;
@@ -254,6 +261,18 @@ function deleteCustomerByEmail(email) {
   const existing = getCustomerByIdentity(email);
   if (!existing) return false;
   run(`DELETE FROM customers WHERE lower(email) = ${sqlValue(String(existing.email || "").toLowerCase())};`);
+  return true;
+}
+
+function deleteCustomerById(id) {
+  const existing = one(`
+    SELECT id, email
+    FROM customers
+    WHERE id = ${sqlValue(id)}
+    LIMIT 1;
+  `);
+  if (!existing) return false;
+  run(`DELETE FROM customers WHERE id = ${sqlValue(existing.id)};`);
   return true;
 }
 
@@ -412,6 +431,7 @@ module.exports = {
   saveProducts,
   getOrders,
   getOrderById,
+  deleteOrderById,
   updateOrderPaymentStatus,
   saveOrders,
   saveOrder,
@@ -420,6 +440,7 @@ module.exports = {
   registerCustomer,
   updateCustomerByEmail,
   deleteCustomerByEmail,
+  deleteCustomerById,
   saveCustomers,
   saveOtpChallenge,
   getOtpChallenge,

@@ -1193,6 +1193,28 @@ function Admin({ products, setProducts }) {
   const revenue = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
   const deliveryStatuses = ["New order", "Processing", "Packed", "Shipped", "Delivered", "Cancelled"];
   const visibleOrders = orders.filter((order) => (order.deliveryStatus || "New order") === activeOrderStatus);
+  const deleteOrder = async (order) => {
+    const ok = window.confirm(`Delete order ${order.id}? This cannot be undone.`);
+    if (!ok) return;
+    try {
+      await api(`/api/orders?id=${encodeURIComponent(order.id)}`, { method: "DELETE" });
+      setOrders((current) => current.filter((item) => item.id !== order.id));
+      setNote(`Order ${order.id} deleted.`);
+    } catch (error) {
+      setNote(error.message);
+    }
+  };
+  const deleteCustomer = async (customer) => {
+    const ok = window.confirm(`Delete account for ${customer.email}? This removes the saved customer login/profile.`);
+    if (!ok) return;
+    try {
+      await api(`/api/customers?id=${encodeURIComponent(customer.id)}`, { method: "DELETE" });
+      setCustomers((current) => current.filter((item) => item.id !== customer.id));
+      setNote(`Account ${customer.email} deleted.`);
+    } catch (error) {
+      setNote(error.message);
+    }
+  };
 
   return (
     <main className="admin-shell">
@@ -1216,6 +1238,7 @@ function Admin({ products, setProducts }) {
         <div className="admin-head">
           <SectionTitle eyebrow="Operations" title={adminTabs.find(([id]) => id === activeSection)?.[1] || "Overview"} />
         </div>
+        {note && <p className="notice compact">{note}</p>}
         {activeSection === "overview" && (
           <section className="admin-section-stack">
             <div className="stat-grid">
@@ -1254,7 +1277,7 @@ function Admin({ products, setProducts }) {
                   </header>
                   <div className="admin-order-scroll">
                     {visibleOrders.length ? visibleOrders.map((order) => (
-                      <AdminOrderRow key={order.id} order={order} orders={orders} setOrders={setOrders} />
+                      <AdminOrderRow key={order.id} order={order} orders={orders} setOrders={setOrders} onDelete={deleteOrder} />
                     )) : <p className="muted">No orders in this status.</p>}
                   </div>
                 </section>
@@ -1285,6 +1308,7 @@ function Admin({ products, setProducts }) {
                   <span>{customer.email}</span>
                   <span>{customer.phone || "No phone"}</span>
                   <span>{customer.address || "No address saved"}</span>
+                  <button className="danger-button small" onClick={() => deleteCustomer(customer)} type="button">Delete</button>
                 </article>
               )) : <p className="muted">No customer accounts yet.</p>}
             </div>
@@ -1295,7 +1319,7 @@ function Admin({ products, setProducts }) {
   );
 }
 
-function AdminOrderRow({ order, orders, setOrders }) {
+function AdminOrderRow({ order, orders, setOrders, onDelete }) {
   const [paymentStatus, setPaymentStatus] = useState(order.paymentStatus || "Pending");
   const [deliveryStatus, setDeliveryStatus] = useState(order.deliveryStatus || "New order");
   const [saved, setSaved] = useState("");
@@ -1341,6 +1365,7 @@ function AdminOrderRow({ order, orders, setOrders }) {
         </select>
         <button className="primary small" onClick={save} type="button">Update</button>
         <button className="ghost small" onClick={() => { window.location.href = `/invoice.html?order=${encodeURIComponent(order.id)}`; }} type="button">Invoice</button>
+        <button className="danger-button small" onClick={() => onDelete(order)} type="button">Delete</button>
       </div>
       {saved && <p className="notice compact">{saved}</p>}
     </article>

@@ -689,6 +689,14 @@ async function handleApi(req, res, url) {
       if (!requireAdmin(req, res)) return;
       return sendJson(res, 200, database.getOrders());
     }
+    if (req.method === "DELETE") {
+      if (!requireAdmin(req, res)) return;
+      const id = String(url.searchParams.get("id") || "");
+      if (!id) return sendJson(res, 400, { error: "Order id is required" });
+      const deleted = database.deleteOrderById(id);
+      if (!deleted) return sendJson(res, 404, { error: "Order not found" });
+      return sendJson(res, 200, { ok: true, id });
+    }
     if (req.method === "PUT") {
       if (!requireAdmin(req, res)) return;
       const body = await readBody(req);
@@ -713,6 +721,13 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/customers") {
     if (!requireAdmin(req, res)) return;
     if (req.method === "GET") return sendJson(res, 200, database.getCustomers());
+    if (req.method === "DELETE") {
+      const id = String(url.searchParams.get("id") || "");
+      if (!id) return sendJson(res, 400, { error: "Customer id is required" });
+      const deleted = database.deleteCustomerById(id);
+      if (!deleted) return sendJson(res, 404, { error: "Customer account not found" });
+      return sendJson(res, 200, { ok: true, id });
+    }
     if (req.method === "PUT") {
       const body = await readBody(req);
       return sendJson(res, 200, database.saveCustomers(Array.isArray(body) ? body : []));
