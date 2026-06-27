@@ -124,6 +124,74 @@ function frenchInvoiceEmail(order) {
   return lines.join("\n");
 }
 
+function orderNotificationEmail(order, type) {
+  const customerName = order.customer?.name || "Client";
+  const total = Number(order.total || 0).toFixed(2);
+  const messages = {
+    cancelled: {
+      subject: `Commande annulée Idukki Spices ${order.id}`,
+      lines: [
+        `Bonjour ${customerName},`,
+        "",
+        `Votre commande ${order.id} a bien été annulée.`,
+        "",
+        `Montant de la commande: €${total}`,
+        "",
+        "Si vous avez déjà payé cette commande, vous pouvez demander un remboursement depuis votre compte.",
+        "",
+        "Merci,",
+        "Idukki Spices"
+      ]
+    },
+    refundRequested: {
+      subject: `Demande de remboursement reçue ${order.id}`,
+      lines: [
+        `Bonjour ${customerName},`,
+        "",
+        `Nous avons reçu votre demande de remboursement pour la commande ${order.id}.`,
+        "",
+        `Montant concerné: €${total}`,
+        "",
+        "Notre équipe va vérifier la commande et approuver le remboursement si les conditions sont remplies.",
+        "",
+        "Merci,",
+        "Idukki Spices"
+      ]
+    },
+    refundCredited: {
+      subject: `Remboursement approuvé ${order.id}`,
+      lines: [
+        `Bonjour ${customerName},`,
+        "",
+        `Le remboursement de votre commande ${order.id} a été approuvé.`,
+        "",
+        `Montant remboursé: €${total}`,
+        "",
+        "Le montant sera crédité sur votre moyen de paiement d'origine selon les délais de votre banque.",
+        "",
+        "Merci,",
+        "Idukki Spices"
+      ]
+    }
+  };
+  const message = messages[type];
+  return {
+    subject: message.subject,
+    body: message.lines.join("\n")
+  };
+}
+
+async function sendOrderNotification(order, type) {
+  const to = order.customer?.email || order.customerEmail;
+  if (!to) return { sent: false, error: "Customer email missing" };
+  try {
+    const message = orderNotificationEmail(order, type);
+    return await sendEmail(to, message.subject, message.body);
+  } catch (error) {
+    return { sent: false, error: error.message };
+  }
+}
+
 function pdfText(value) {
   return String(value ?? "")
     .replace(/€/g, "EUR")
@@ -606,8 +674,13 @@ async function handleApi(req, res, url) {
         return sendJson(res, 409, { error: "This order is already packed and cannot be cancelled." });
       }
       if (status === "Cancelled") return sendJson(res, 200, order);
-      const updated = database.updateOrder(order.id, { deliveryStatus: "Cancelled" });
-      return sendJson(res, 200, updated);
+      const updated = database.updateOrder(order.id, { deliveryStatus: "Cancelled", cancelledAt: new Date().toISOString() });
+      const emailResult = await sendOrderNotification(updated, "cancelled");
+      const notified = database.updateOrder(updated.id, {
+        cancellationEmailSentAt: new Date().toISOString(),
+        cancellationEmailResult: emailResult
+      });
+      return sendJson(res, 200, notified);
     }
 
     if (body?.action === "refund") {
@@ -617,8 +690,13 @@ async function handleApi(req, res, url) {
       if (order.paymentStatus !== "Paid") {
         return sendJson(res, 409, { error: "Refund is available only for paid orders." });
       }
-      const updated = database.updateOrder(order.id, { paymentStatus: "Refund requested" });
-      return sendJson(res, 200, updated);
+      const updated = database.updateOrder(order.id, { paymentStatus: "Refund requested", refundRequestedAt: new Date().toISOString() });
+      const emailResult = await sendOrderNotification(updated, "refundRequested");
+      const notified = database.updateOrder(updated.id, {
+        refundRequestEmailSentAt: new Date().toISOString(),
+        refundRequestEmailResult: emailResult
+      });
+      return sendJson(res, 200, notified);
     }
 
     return sendJson(res, 400, { error: "Unknown order action" });
@@ -808,7 +886,12 @@ async function handleApi(req, res, url) {
         stripeRefundId: refund.id,
         refundResult: refund
       });
-      return sendJson(res, 200, updated);
+      const emailResult = await sendOrderNotification(updated, "refundCredited");
+      const notified = database.updateOrder(updated.id, {
+        refundCreditedEmailSentAt: new Date().toISOString(),
+        refundCreditedEmailResult: emailResult
+      });
+      return sendJson(res, 200, notified);
     } catch (error) {
       return sendJson(res, 502, { error: error.message });
     }
