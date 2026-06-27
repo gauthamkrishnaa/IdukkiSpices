@@ -863,7 +863,7 @@ function Auth({ setCustomer, go }) {
     try {
       setAuthBusy(true);
       setNote("Verifying OTP...");
-      const data = await api("/api/auth/verify-otp", { method: "POST", body: JSON.stringify({ identity: value, otp }) });
+      const data = await api("/api/auth/verify-otp", { method: "POST", body: JSON.stringify({ identity: value, method, otp }) });
       sessionStorage.setItem(customerKey, data.token);
       sessionStorage.setItem(customerDataKey, JSON.stringify(data.account));
       setCustomer(data.account);

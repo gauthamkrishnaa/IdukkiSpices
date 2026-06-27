@@ -37,7 +37,6 @@ const adminPasswordHash = requiredEnv("ADMIN_PASSWORD_HASH");
 const publicBaseUrl = process.env.PUBLIC_BASE_URL || `http://${host}:${port}`;
 const sessionSecret = requiredEnv("SESSION_SECRET");
 const adminSessions = new Set();
-const otpChallenges = new Map();
 const MIN_ORDER_VALUE = 1;
 const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_FEE = 0;
@@ -234,12 +233,25 @@ function safeEqual(actual, expected, encoding = "utf8") {
   return crypto.timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
+function otpHash(code) {
+  return crypto
+    .createHmac("sha256", sessionSecret)
+    .update(String(code || "").trim())
+    .digest("hex");
+}
+
 function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
 }
 
 function normalizePhone(value) {
   return String(value || "").trim().replace(/[\s().-]/g, "");
+}
+
+function normalizeAuthIdentity(value, method) {
+  return method === "phone" || !String(value || "").includes("@")
+    ? normalizePhone(value)
+    : normalizeEmail(value);
 }
 
 function validEmail(value) {
@@ -508,26 +520,34 @@ async function handleApi(req, res, url) {
     const account = database.getCustomerByIdentity(identity);
     if (!account) return sendJson(res, 404, { error: "No account found" });
     const code = String(Math.floor(100000 + Math.random() * 900000));
-    otpChallenges.set(identity, { code, email: account.email, expiresAt: Date.now() + 5 * 60 * 1000 });
+    const expiresAt = Date.now() + 5 * 60 * 1000;
+    database.saveOtpChallenge({ purpose: "login", identity, email: account.email, codeHash: otpHash(code), expiresAt });
     const message = `Your Idukki Spices OTP is ${code}. It expires in 5 minutes.`;
     try {
       const result = body.method === "phone"
         ? await sendSms(normalizePhone(account.phone || identity), message)
         : await sendEmail(account.email, "Your Idukki Spices OTP", message);
-      if (!result.sent) return sendJson(res, 503, { error: "OTP provider is not configured", setupRequired: result.setupRequired });
+      if (!result.sent) {
+        database.deleteOtpChallenge("login", identity);
+        return sendJson(res, 503, { error: "OTP provider is not configured", setupRequired: result.setupRequired });
+      }
       return sendJson(res, 200, { ok: true, sent: true, channel: body.method });
     } catch (error) {
+      database.deleteOtpChallenge("login", identity);
       return sendJson(res, 502, { error: error.message });
     }
   }
 
   if (url.pathname === "/api/auth/verify-otp" && req.method === "POST") {
     const body = await readBody(req);
-    const identity = String(body.identity || "").trim().toLowerCase();
-    const challenge = otpChallenges.get(identity);
-    if (!challenge || challenge.expiresAt < Date.now()) return sendJson(res, 400, { error: "OTP expired or missing" });
-    if (String(body.otp || "").trim() !== challenge.code) return sendJson(res, 401, { error: "OTP is incorrect" });
-    otpChallenges.delete(identity);
+    const identity = normalizeAuthIdentity(body.identity, body.method);
+    const challenge = database.getOtpChallenge("login", identity);
+    if (!challenge || Number(challenge.expiresAt || 0) < Date.now()) {
+      if (challenge) database.deleteOtpChallenge("login", identity);
+      return sendJson(res, 400, { error: "OTP expired or missing. Please send a new OTP and try again." });
+    }
+    if (!safeEqual(otpHash(body.otp), challenge.codeHash, "hex")) return sendJson(res, 401, { error: "OTP is incorrect" });
+    database.deleteOtpChallenge("login", identity);
     const token = signCustomerToken(challenge.email);
     return sendJson(res, 200, { ok: true, email: challenge.email, token, account: database.getCustomerByIdentity(challenge.email) });
   }
@@ -569,13 +589,19 @@ async function handleApi(req, res, url) {
     const account = database.getCustomerByIdentity(email);
     if (!account) return sendJson(res, 404, { error: "Account not found" });
     const code = String(Math.floor(100000 + Math.random() * 900000));
-    otpChallenges.set(`deactivate:${normalizeEmail(email)}`, { code, email: normalizeEmail(email), expiresAt: Date.now() + 5 * 60 * 1000 });
+    const identity = normalizeEmail(email);
+    const expiresAt = Date.now() + 5 * 60 * 1000;
+    database.saveOtpChallenge({ purpose: "deactivate", identity, email: identity, codeHash: otpHash(code), expiresAt });
     const message = `Votre code OTP Idukki Spices pour désactiver le compte est ${code}. Il expire dans 5 minutes.`;
     try {
       const result = await sendEmail(account.email, "Code OTP de désactivation Idukki Spices", message);
-      if (!result.sent) return sendJson(res, 503, { error: "OTP provider is not configured", setupRequired: result.setupRequired });
+      if (!result.sent) {
+        database.deleteOtpChallenge("deactivate", identity);
+        return sendJson(res, 503, { error: "OTP provider is not configured", setupRequired: result.setupRequired });
+      }
       return sendJson(res, 200, { ok: true, sent: true });
     } catch (error) {
+      database.deleteOtpChallenge("deactivate", identity);
       return sendJson(res, 502, { error: error.message });
     }
   }
@@ -584,13 +610,16 @@ async function handleApi(req, res, url) {
     const email = customerEmailFromToken(req);
     if (!email) return sendJson(res, 401, { error: "Account login required" });
     const body = await readBody(req);
-    const challengeKey = `deactivate:${normalizeEmail(email)}`;
-    const challenge = otpChallenges.get(challengeKey);
-    if (!challenge || challenge.expiresAt < Date.now()) return sendJson(res, 400, { error: "OTP expired or missing" });
-    if (String(body?.otp || "").trim() !== challenge.code) return sendJson(res, 401, { error: "OTP is incorrect" });
+    const identity = normalizeEmail(email);
+    const challenge = database.getOtpChallenge("deactivate", identity);
+    if (!challenge || Number(challenge.expiresAt || 0) < Date.now()) {
+      if (challenge) database.deleteOtpChallenge("deactivate", identity);
+      return sendJson(res, 400, { error: "OTP expired or missing. Please send a new OTP and try again." });
+    }
+    if (!safeEqual(otpHash(body?.otp), challenge.codeHash, "hex")) return sendJson(res, 401, { error: "OTP is incorrect" });
     const deleted = database.deleteCustomerByEmail(email);
     if (!deleted) return sendJson(res, 404, { error: "Account not found" });
-    otpChallenges.delete(challengeKey);
+    database.deleteOtpChallenge("deactivate", identity);
     return sendJson(res, 200, { ok: true });
   }
 

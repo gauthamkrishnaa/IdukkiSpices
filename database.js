@@ -144,6 +144,16 @@ function initDatabase() {
       body TEXT NOT NULL,
       status TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS otp_challenges (
+      purpose TEXT NOT NULL,
+      identity TEXT NOT NULL,
+      email TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (purpose, identity)
+    );
   `);
 
   const count = one("SELECT COUNT(*) AS count FROM products;")?.count || 0;
@@ -255,6 +265,35 @@ function saveCustomers(customers) {
     COMMIT;
   `);
   return getCustomers();
+}
+
+function saveOtpChallenge({ purpose, identity, email, codeHash, expiresAt }) {
+  run(`
+    INSERT OR REPLACE INTO otp_challenges
+      (purpose, identity, email, code_hash, expires_at, created_at)
+    VALUES
+      (${sqlValue(purpose)}, ${sqlValue(identity)}, ${sqlValue(email)},
+       ${sqlValue(codeHash)}, ${sqlValue(Number(expiresAt || 0))},
+       ${sqlValue(new Date().toISOString())});
+  `);
+}
+
+function getOtpChallenge(purpose, identity) {
+  return one(`
+    SELECT purpose, identity, email, code_hash AS codeHash, expires_at AS expiresAt
+    FROM otp_challenges
+    WHERE purpose = ${sqlValue(purpose)}
+      AND identity = ${sqlValue(identity)}
+    LIMIT 1;
+  `);
+}
+
+function deleteOtpChallenge(purpose, identity) {
+  run(`
+    DELETE FROM otp_challenges
+    WHERE purpose = ${sqlValue(purpose)}
+      AND identity = ${sqlValue(identity)};
+  `);
 }
 
 const frenchProductNames = {
@@ -382,5 +421,8 @@ module.exports = {
   updateCustomerByEmail,
   deleteCustomerByEmail,
   saveCustomers,
+  saveOtpChallenge,
+  getOtpChallenge,
+  deleteOtpChallenge,
   getOutbox
 };
