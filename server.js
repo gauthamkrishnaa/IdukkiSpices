@@ -420,6 +420,19 @@ async function verifyStripeCheckoutSession(sessionId, orderId) {
   return data;
 }
 
+async function createStripeRefund(order) {
+  if (!process.env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not configured");
+  if (!order.stripePaymentIntentId) throw new Error("Stripe payment reference is missing for this order.");
+  const data = await postForm("https://api.stripe.com/v1/refunds", {
+    payment_intent: order.stripePaymentIntentId,
+    reason: "requested_by_customer",
+    "metadata[order_id]": order.id
+  }, {
+    Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`
+  });
+  return data;
+}
+
 function verifyStripeWebhook(rawBody, signatureHeader) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) throw new Error("STRIPE_WEBHOOK_SECRET is not configured");
@@ -431,8 +444,8 @@ function verifyStripeWebhook(rawBody, signatureHeader) {
   if (!Number.isFinite(ageSeconds) || ageSeconds > 300) throw new Error("Stripe signature is too old");
 }
 
-async function confirmPaidOrder(orderId) {
-  const updated = database.updateOrderPaymentStatus(orderId, "Paid");
+async function confirmPaidOrder(orderId, paymentDetails = {}) {
+  const updated = database.updateOrderPaymentStatus(orderId, "Paid", paymentDetails);
   if (!updated) return null;
   if (updated.confirmationEmailSent) {
     return { order: updated, emailResult: { skipped: true, reason: "already-sent" } };
@@ -445,6 +458,7 @@ async function confirmPaidOrder(orderId) {
     [{ filename: `facture-${updated.id}.pdf`, content: invoicePdf }]
   );
   const confirmed = database.updateOrderPaymentStatus(updated.id, "Paid", {
+    ...paymentDetails,
     confirmationEmailSent: true,
     confirmationEmailSentAt: new Date().toISOString(),
     confirmationEmailResult: emailResult
@@ -568,6 +582,48 @@ async function handleApi(req, res, url) {
     }));
   }
 
+  if (url.pathname === "/api/account/orders/action" && req.method === "POST") {
+    const email = customerEmailFromToken(req);
+    if (!email) return sendJson(res, 401, { error: "Account login required" });
+    const account = database.getCustomerByIdentity(email);
+    if (!account) return sendJson(res, 404, { error: "Account not found" });
+    const body = await readBody(req);
+    const order = database.getOrderById(body?.orderId);
+    if (!order) return sendJson(res, 404, { error: "Order not found" });
+    const accountCreatedAt = Date.parse(account.createdAt || "");
+    const orderCreatedAt = Date.parse(order.createdAt || "");
+    const ownsOrder = order.customerId
+      ? order.customerId === account.id
+      : order.customerEmail === account.email
+        && Number.isFinite(accountCreatedAt)
+        && Number.isFinite(orderCreatedAt)
+        && orderCreatedAt >= accountCreatedAt;
+    if (!ownsOrder) return sendJson(res, 403, { error: "You cannot change this order" });
+
+    const status = order.deliveryStatus || "New order";
+    if (body?.action === "cancel") {
+      if (["Packed", "Shipped", "Delivered"].includes(status)) {
+        return sendJson(res, 409, { error: "This order is already packed and cannot be cancelled." });
+      }
+      if (status === "Cancelled") return sendJson(res, 200, order);
+      const updated = database.updateOrder(order.id, { deliveryStatus: "Cancelled" });
+      return sendJson(res, 200, updated);
+    }
+
+    if (body?.action === "refund") {
+      if (status !== "Cancelled") {
+        return sendJson(res, 409, { error: "Refund can be requested only after the order is cancelled." });
+      }
+      if (order.paymentStatus !== "Paid") {
+        return sendJson(res, 409, { error: "Refund is available only for paid orders." });
+      }
+      const updated = database.updateOrder(order.id, { paymentStatus: "Refund requested" });
+      return sendJson(res, 200, updated);
+    }
+
+    return sendJson(res, 400, { error: "Unknown order action" });
+  }
+
   if (url.pathname === "/api/account/profile" && req.method === "PUT") {
     const email = customerEmailFromToken(req);
     if (!email) return sendJson(res, 401, { error: "Account login required" });
@@ -647,9 +703,12 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/payments/confirm" && req.method === "POST") {
     const body = await readBody(req);
     const orderId = String(body?.orderId || "");
-    await verifyStripeCheckoutSession(body?.sessionId, orderId);
+    const session = await verifyStripeCheckoutSession(body?.sessionId, orderId);
     try {
-      const confirmed = await confirmPaidOrder(orderId);
+      const confirmed = await confirmPaidOrder(orderId, {
+        stripeSessionId: session.id,
+        stripePaymentIntentId: session.payment_intent || ""
+      });
       if (!confirmed) return sendJson(res, 404, { error: "Order not found" });
       return sendJson(res, 200, { ok: true, order: confirmed.order, emailResult: confirmed.emailResult });
     } catch (error) {
@@ -666,7 +725,10 @@ async function handleApi(req, res, url) {
       if (event.type === "checkout.session.completed") {
         const session = event.data?.object || {};
         if (session.payment_status === "paid" && session.metadata?.order_id) {
-          await confirmPaidOrder(session.metadata.order_id);
+          await confirmPaidOrder(session.metadata.order_id, {
+            stripeSessionId: session.id,
+            stripePaymentIntentId: session.payment_intent || ""
+          });
         }
       }
       return sendJson(res, 200, { received: true });
@@ -711,10 +773,36 @@ async function handleApi(req, res, url) {
       const savedOrder = database.saveOrder({ ...incomingOrder, ...charges });
       try {
         const stripeSession = await createStripeCheckout(savedOrder);
+        database.updateOrder(savedOrder.id, { stripeSessionId: stripeSession.id || "" });
         return sendJson(res, 201, { ...savedOrder, stripeSession });
       } catch (error) {
         return sendJson(res, 201, { ...savedOrder, warning: error.message });
       }
+    }
+  }
+
+  if (url.pathname === "/api/orders/refund" && req.method === "POST") {
+    if (!requireAdmin(req, res)) return;
+    const body = await readBody(req);
+    const order = database.getOrderById(body?.orderId);
+    if (!order) return sendJson(res, 404, { error: "Order not found" });
+    if (order.deliveryStatus !== "Cancelled") {
+      return sendJson(res, 409, { error: "Refund can be approved only after the order is cancelled." });
+    }
+    if (order.paymentStatus !== "Refund requested") {
+      return sendJson(res, 409, { error: "Customer has not requested a refund for this order." });
+    }
+    try {
+      const refund = await createStripeRefund(order);
+      const updated = database.updateOrder(order.id, {
+        paymentStatus: "Refunded",
+        refundApprovedAt: new Date().toISOString(),
+        stripeRefundId: refund.id,
+        refundResult: refund
+      });
+      return sendJson(res, 200, updated);
+    } catch (error) {
+      return sendJson(res, 502, { error: error.message });
     }
   }
 

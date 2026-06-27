@@ -199,6 +199,14 @@ function updateOrderPaymentStatus(id, paymentStatus, changes = {}) {
   return updated;
 }
 
+function updateOrder(id, changes = {}) {
+  const order = getOrderById(id);
+  if (!order) return null;
+  const updated = { ...order, ...changes };
+  run(orderInsertSql(updated));
+  return updated;
+}
+
 function saveOrders(orders) {
   run(`
     BEGIN;
@@ -433,6 +441,7 @@ module.exports = {
   getOrderById,
   deleteOrderById,
   updateOrderPaymentStatus,
+  updateOrder,
   saveOrders,
   saveOrder,
   getCustomers,

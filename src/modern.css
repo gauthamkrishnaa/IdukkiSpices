@@ -1658,8 +1658,12 @@ h3 {
 
 .admin-order-controls {
   display: grid;
-  grid-template-columns: 1fr 1fr auto auto auto;
+  grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) repeat(4, auto);
   gap: 8px;
+}
+
+.admin-order-controls .refund-approve {
+  background: #1f7a4d;
 }
 
 .admin-order-controls select {
@@ -1848,6 +1852,18 @@ h3 {
 .order-card span {
   color: var(--leaf-dark);
   font-weight: 900;
+}
+
+.order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.order-actions button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
 }
 
 .order-items {

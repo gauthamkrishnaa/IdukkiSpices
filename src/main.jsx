@@ -94,6 +94,7 @@ const api = async (path, options = {}) => {
     path.startsWith("/api/customers") ||
     path.startsWith("/api/email-outbox") ||
     path.startsWith("/api/invoice") ||
+    path.startsWith("/api/orders/refund") ||
     (path.startsWith("/api/orders") && method !== "POST") ||
     (path.startsWith("/api/products") && method !== "GET")
   );
@@ -948,6 +949,7 @@ function PhoneInput({ country, setCountry, value, onChange }) {
 function Account({ customer, setCustomer, setCart, go, lang, theme, setTheme }) {
   const [orders, setOrders] = useState([]);
   const [orderError, setOrderError] = useState("");
+  const [orderNote, setOrderNote] = useState("");
   const [section, setSection] = useState(() => sessionStorage.getItem(accountSectionKey) || "profile");
   const [editing, setEditing] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
@@ -999,6 +1001,35 @@ function Account({ customer, setCustomer, setCart, go, lang, theme, setTheme }) 
   }, [section]);
   if (!customer) return <main className="section"><Empty title="Login required" action="Go to login" onClick={() => go("auth")} /></main>;
   const totalSpent = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+  const updateCustomerOrder = (updatedOrder) => {
+    setOrders((current) => current.map((order) => order.id === updatedOrder.id ? updatedOrder : order));
+  };
+  const cancelOrder = async (order) => {
+    const ok = window.confirm(isFrench
+      ? `Annuler la commande ${order.id} ?`
+      : `Cancel order ${order.id}?`);
+    if (!ok) return;
+    try {
+      const updated = await api("/api/account/orders/action", { method: "POST", body: JSON.stringify({ orderId: order.id, action: "cancel" }) });
+      updateCustomerOrder(updated);
+      setOrderNote(isFrench ? "Commande annulée." : "Order cancelled.");
+    } catch (error) {
+      setOrderNote(error.message);
+    }
+  };
+  const requestRefund = async (order) => {
+    const ok = window.confirm(isFrench
+      ? `Demander un remboursement pour ${order.id} ?`
+      : `Request refund for ${order.id}?`);
+    if (!ok) return;
+    try {
+      const updated = await api("/api/account/orders/action", { method: "POST", body: JSON.stringify({ orderId: order.id, action: "refund" }) });
+      updateCustomerOrder(updated);
+      setOrderNote(isFrench ? "Demande de remboursement envoyée." : "Refund request sent.");
+    } catch (error) {
+      setOrderNote(error.message);
+    }
+  };
   const updateProfile = async (event) => {
     event.preventDefault();
     try {
@@ -1088,9 +1119,19 @@ function Account({ customer, setCustomer, setCart, go, lang, theme, setTheme }) 
             <article><span>Latest status</span><strong>{orders[0]?.deliveryStatus || "No orders"}</strong></article>
           </div>
           {orderError && <p className="notice">{orderError}. Please login again.</p>}
+          {orderNote && <p className="notice">{orderNote}</p>}
           {orders.length ? (
             <div className="account-orders">
-              {orders.map((order) => <OrderCard key={order.id} order={order} detailed lang={lang} />)}
+              {orders.map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  detailed
+                  lang={lang}
+                  onCancel={cancelOrder}
+                  onRefund={requestRefund}
+                />
+              ))}
             </div>
           ) : <Empty title="No orders yet" action="Shop now" onClick={() => go("shop")} />}
         </section>
@@ -1215,6 +1256,17 @@ function Admin({ products, setProducts }) {
       setNote(error.message);
     }
   };
+  const approveRefund = async (order) => {
+    const ok = window.confirm(`Approve refund for ${order.id}? This will request a Stripe refund.`);
+    if (!ok) return;
+    try {
+      const updated = await api("/api/orders/refund", { method: "POST", body: JSON.stringify({ orderId: order.id }) });
+      setOrders((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setNote(`Refund approved for ${order.id}.`);
+    } catch (error) {
+      setNote(error.message);
+    }
+  };
 
   return (
     <main className="admin-shell">
@@ -1277,7 +1329,7 @@ function Admin({ products, setProducts }) {
                   </header>
                   <div className="admin-order-scroll">
                     {visibleOrders.length ? visibleOrders.map((order) => (
-                      <AdminOrderRow key={order.id} order={order} orders={orders} setOrders={setOrders} onDelete={deleteOrder} />
+                      <AdminOrderRow key={order.id} order={order} orders={orders} setOrders={setOrders} onDelete={deleteOrder} onApproveRefund={approveRefund} />
                     )) : <p className="muted">No orders in this status.</p>}
                   </div>
                 </section>
@@ -1319,7 +1371,7 @@ function Admin({ products, setProducts }) {
   );
 }
 
-function AdminOrderRow({ order, orders, setOrders, onDelete }) {
+function AdminOrderRow({ order, orders, setOrders, onDelete, onApproveRefund }) {
   const [paymentStatus, setPaymentStatus] = useState(order.paymentStatus || "Pending");
   const [deliveryStatus, setDeliveryStatus] = useState(order.deliveryStatus || "New order");
   const [saved, setSaved] = useState("");
@@ -1353,6 +1405,7 @@ function AdminOrderRow({ order, orders, setOrders, onDelete }) {
           <option>Pending</option>
           <option>Paid</option>
           <option>Failed</option>
+          <option>Refund requested</option>
           <option>Refunded</option>
         </select>
         <select value={deliveryStatus} onChange={(event) => setDeliveryStatus(event.target.value)}>
@@ -1365,6 +1418,9 @@ function AdminOrderRow({ order, orders, setOrders, onDelete }) {
         </select>
         <button className="primary small" onClick={save} type="button">Update</button>
         <button className="ghost small" onClick={() => { window.location.href = `/invoice.html?order=${encodeURIComponent(order.id)}`; }} type="button">Invoice</button>
+        {order.paymentStatus === "Refund requested" && (
+          <button className="primary small refund-approve" onClick={() => onApproveRefund(order)} type="button">Approve refund</button>
+        )}
         <button className="danger-button small" onClick={() => onDelete(order)} type="button">Delete</button>
       </div>
       {saved && <p className="notice compact">{saved}</p>}
@@ -1509,12 +1565,18 @@ function OrderDetail({ lang }) {
   return <main className="section"><OrderCard order={order} lang={lang} /></main>;
 }
 
-function OrderCard({ order, detailed = false, lang }) {
+function OrderCard({ order, detailed = false, lang, onCancel, onRefund }) {
   const created = order.createdAt ? new Date(order.createdAt).toLocaleDateString(undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric"
   }) : "Date not available";
+  const isFrench = lang === "fr";
+  const deliveryStatus = order.deliveryStatus || "New order";
+  const paymentStatus = order.paymentStatus || "Pending";
+  const canCancel = !["Packed", "Shipped", "Delivered", "Cancelled"].includes(deliveryStatus);
+  const canRefund = deliveryStatus === "Cancelled" && paymentStatus === "Paid";
+  const showActions = Boolean(onCancel || onRefund);
   return (
     <article className="order-card">
       <header>
@@ -1525,6 +1587,20 @@ function OrderCard({ order, detailed = false, lang }) {
         <span>{order.paymentStatus} / {order.deliveryStatus}</span>
       </header>
       <p>{order.items?.length || 0} items · {money(order.total)}</p>
+      {showActions && (
+        <div className="order-actions">
+          {onCancel && (
+            <button className="ghost small" disabled={!canCancel} onClick={() => onCancel(order)} type="button">
+              {isFrench ? "Annuler" : "Cancel order"}
+            </button>
+          )}
+          {onRefund && (
+            <button className="primary small" disabled={!canRefund} onClick={() => onRefund(order)} type="button">
+              {isFrench ? "Demander remboursement" : "Request refund"}
+            </button>
+          )}
+        </div>
+      )}
       {detailed && (
         <div className="order-items">
           {(order.items || []).map((item) => (
