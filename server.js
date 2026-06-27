@@ -202,54 +202,82 @@ function pdfText(value) {
 }
 
 function createFrenchInvoicePdf(order) {
-  const created = order.createdAt ? new Date(order.createdAt).toLocaleString("fr-FR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  }) : "Date non disponible";
+  const createdDate = order.createdAt ? new Date(order.createdAt).toLocaleDateString("fr-FR") : "Date non disponible";
   const subtotal = Number(order.subtotal ?? (order.items || []).reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0));
   const shippingFee = Number(order.shippingFee || 0);
-  const pages = [[]];
-  let y = 790;
-  const addLine = (text, size = 11, x = 50, gap = 18) => {
-    if (y < 70) {
-      pages.push([]);
-      y = 790;
-    }
-    pages[pages.length - 1].push(`BT /F1 ${size} Tf ${x} ${y} Td (${pdfText(text)}) Tj ET`);
-    y -= gap;
+  const vatAmount = 0;
+  const commands = [];
+  const text = (value, x, y, size = 10, font = "F1") => {
+    commands.push(`BT /${font} ${size} Tf ${x} ${y} Td (${pdfText(value)}) Tj ET`);
   };
-  const addBlank = (gap = 10) => { y -= gap; };
+  const rightText = (value, rightX, y, size = 10, font = "F1") => {
+    const approximateWidth = String(value || "").length * size * 0.48;
+    text(value, Math.max(40, rightX - approximateWidth), y, size, font);
+  };
+  const line = (x1, y1, x2, y2, width = 0.6) => {
+    commands.push(`${width} w ${x1} ${y1} m ${x2} ${y2} l S`);
+  };
+  const moneyText = (value) => `EUR ${Number(value || 0).toFixed(2)}`;
 
-  addLine("FACTURE", 24, 50, 30);
-  addLine("Idukki Spices", 14, 50, 22);
-  addLine(`Facture: ${order.id}`, 11);
-  addLine(`Date: ${created}`, 11);
-  addBlank(12);
-  addLine("Facturé à", 13, 50, 20);
-  addLine(order.customer?.name || "Client");
-  addLine(order.customer?.email || order.customerEmail || "");
-  addLine(order.customer?.phone || "Téléphone non renseigné");
-  addLine(order.customer?.address || "Adresse non renseignée");
-  addBlank(12);
-  addLine("Articles", 13, 50, 22);
-  addLine("Article                                      Qté        Prix        Total", 10, 50, 16);
-  addLine("--------------------------------------------------------------------------", 10, 50, 14);
+  text("FACTURE", 470, 790, 20, "F2");
+  rightText(`Date facture: ${createdDate}`, 553, 765, 9);
+  rightText("Échéance: Immédiate", 553, 748, 9);
+  rightText("Type: Livraison de marchandises", 553, 731, 9);
+
+  text("Idukki Spices", 43, 690, 10, "F2");
+  text("56 rue Philippe de Girard", 43, 674, 10);
+  text("75018 Paris", 43, 658, 10);
+  text("France", 43, 642, 10);
+
+  text(order.customer?.name || "Client", 326, 690, 10, "F2");
+  text(order.customer?.address || "Adresse non renseignée", 326, 674, 10);
+  text(order.customer?.phone || "Téléphone non renseigné", 326, 658, 10);
+  text(order.customer?.email || order.customerEmail || "", 326, 642, 10);
+
+  text("Description", 47, 550, 9, "F2");
+  text("Date", 210, 550, 9, "F2");
+  text("Qté", 285, 550, 9, "F2");
+  text("Unité", 326, 550, 9, "F2");
+  text("Prix unité", 383, 550, 9, "F2");
+  text("TVA %", 455, 550, 9, "F2");
+  rightText("Total", 548, 550, 9, "F2");
+  line(47, 540, 548, 540);
+
+  let rowY = 520;
   (order.items || []).forEach((item) => {
-    const name = frenchProductName(item).slice(0, 38).padEnd(42, " ");
-    const qty = String(item.qty || 0).padStart(3, " ");
-    const price = `EUR ${Number(item.price || 0).toFixed(2)}`.padStart(12, " ");
-    const lineTotal = `EUR ${(Number(item.qty || 0) * Number(item.price || 0)).toFixed(2)}`.padStart(12, " ");
-    addLine(`${name} ${qty} ${price} ${lineTotal}`, 10, 50, 16);
+    const quantity = Number(item.qty || 0);
+    const lineTotal = quantity * Number(item.price || 0);
+    text(frenchProductName(item).slice(0, 28), 47, rowY, 9);
+    text(createdDate, 202, rowY, 9);
+    rightText(quantity.toFixed(2), 300, rowY, 9);
+    text("pack", 326, rowY, 9);
+    rightText(moneyText(item.price), 426, rowY, 9);
+    rightText("0.00%", 482, rowY, 9);
+    rightText(moneyText(lineTotal), 548, rowY, 9);
+    rowY -= 18;
   });
-  addBlank(16);
-  addLine(`Sous-total: EUR ${subtotal.toFixed(2)}`, 12, 350);
-  addLine(`Livraison: ${shippingFee ? `EUR ${shippingFee.toFixed(2)}` : "Gratuite"}`, 12, 350);
-  addLine(`Total: EUR ${Number(order.total || 0).toFixed(2)}`, 15, 350, 24);
-  addBlank(18);
-  addLine("Merci pour votre achat chez Idukki Spices.", 11);
+  if (shippingFee > 0) {
+    text("Livraison", 47, rowY, 9);
+    text(createdDate, 202, rowY, 9);
+    rightText("1.00", 300, rowY, 9);
+    text("service", 326, rowY, 9);
+    rightText(moneyText(shippingFee), 426, rowY, 9);
+    rightText("0.00%", 482, rowY, 9);
+    rightText(moneyText(shippingFee), 548, rowY, 9);
+    rowY -= 18;
+  }
+  line(47, rowY + 8, 548, rowY + 8);
+
+  const totalsY = Math.min(rowY - 26, 485);
+  text("Total hors TVA", 400, totalsY, 9);
+  rightText(moneyText(subtotal + shippingFee), 548, totalsY, 9);
+  text("TVA 0.00%", 400, totalsY - 16, 9);
+  rightText(moneyText(vatAmount), 548, totalsY - 16, 9);
+  text("Total à payer", 400, totalsY - 40, 11, "F2");
+  rightText(moneyText(order.total), 548, totalsY - 40, 11, "F2");
+
+  text("Idukki Spices", 268, 68, 10, "F2");
+  text("56 rue Philippe de Girard 75018 Paris", 206, 50, 8);
 
   const objects = [];
   const addObject = (body) => {
@@ -257,19 +285,13 @@ function createFrenchInvoicePdf(order) {
     return objects.length;
   };
   const fontId = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
-  const pageIds = [];
-  const contentIds = [];
-  pages.forEach((commands) => {
-    const stream = commands.join("\n");
-    const contentId = addObject(`<< /Length ${Buffer.byteLength(stream, "latin1")} >>\nstream\n${stream}\nendstream`);
-    contentIds.push(contentId);
-    pageIds.push(null);
-  });
-  const pagesIdPlaceholder = objects.length + pages.length + 1;
-  contentIds.forEach((contentId, index) => {
-    pageIds[index] = addObject(`<< /Type /Page /Parent ${pagesIdPlaceholder} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`);
-  });
-  const pagesId = addObject(`<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageIds.length} >>`);
+  const boldFontId = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  const stream = commands.join("\n");
+  const contentId = addObject(`<< /Length ${Buffer.byteLength(stream, "latin1")} >>\nstream\n${stream}\nendstream`);
+  const pageId = objects.length + 1;
+  const pagesId = objects.length + 2;
+  addObject(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontId} 0 R /F2 ${boldFontId} 0 R >> >> /Contents ${contentId} 0 R >>`);
+  addObject(`<< /Type /Pages /Kids [${pageId} 0 R] /Count 1 >>`);
   const catalogId = addObject(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
 
   let pdf = "%PDF-1.4\n";
