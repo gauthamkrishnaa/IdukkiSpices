@@ -309,34 +309,43 @@ async function postForm(url, body, headers = {}) {
 }
 
 async function sendEmail(to, subject, body, attachments = []) {
-  if (!process.env.RESEND_API_KEY) {
-    return { sent: false, setupRequired: "RESEND_API_KEY" };
+  if (!process.env.SENDGRID_API_KEY) {
+    return { sent: false, setupRequired: "SENDGRID_API_KEY" };
   }
   const payload = {
-    from: process.env.EMAIL_FROM || "Idukki Spices <onboarding@resend.dev>",
-    to,
+    personalizations: [{ to: [{ email: to }] }],
+    from: parseEmailAddress(process.env.EMAIL_FROM || "Idukki Spices <orders@idukkispices.com>"),
     subject,
-    text: body
+    content: [{ type: "text/plain", value: body }]
   };
   if (attachments.length) {
     payload.attachments = attachments.map((attachment) => ({
       filename: attachment.filename,
       content: Buffer.isBuffer(attachment.content)
         ? attachment.content.toString("base64")
-        : Buffer.from(String(attachment.content || "")).toString("base64")
+        : Buffer.from(String(attachment.content || "")).toString("base64"),
+      type: "application/pdf",
+      disposition: "attachment"
     }));
   }
-  const response = await fetch("https://api.resend.com/emails", {
+  const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+      "Authorization": `Bearer ${process.env.SENDGRID_API_KEY}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify(payload)
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.message || "Email send failed");
-  return { sent: true, provider: "resend", id: data.id };
+  if (!response.ok) throw new Error(data.errors?.[0]?.message || "Email send failed");
+  return { sent: true, provider: "sendgrid" };
+}
+
+function parseEmailAddress(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/^(.*?)\s*<([^>]+)>$/);
+  if (!match) return { email: text };
+  return { name: match[1].trim(), email: match[2].trim() };
 }
 
 async function sendSms(to, body) {

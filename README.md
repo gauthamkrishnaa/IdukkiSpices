@@ -1,6 +1,6 @@
 # Idukki Spices
 
-Responsive ecommerce website for Idukki Spices with a React storefront, Node backend, admin dashboard, Stripe Checkout, OTP login, Resend email, and invoice generation.
+Responsive ecommerce website for Idukki Spices with a React storefront, Node backend, admin dashboard, Stripe Checkout, OTP login, SendGrid email, and invoice generation.
 
 ## Local Development
 
@@ -26,7 +26,7 @@ Copy `.env.example` to `.env` and fill the required values:
 - `ADMIN_PASSWORD_HASH`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
-- `RESEND_API_KEY`
+- `SENDGRID_API_KEY`
 - `EMAIL_FROM`
 
 ## Deploy
