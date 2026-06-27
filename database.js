@@ -210,9 +210,10 @@ function getCustomerByIdentity(identity) {
 }
 
 function registerCustomer(customer) {
-  const existing = getCustomerByIdentity(customer.email) || getCustomerByIdentity(customer.phone);
-  if (existing) {
-    const error = new Error("Account already exists");
+  const existingEmail = getCustomerByIdentity(customer.email);
+  const existingPhone = getCustomerByIdentity(customer.phone);
+  if (existingEmail || existingPhone) {
+    const error = new Error(existingEmail ? "An account already exists with this email address." : "An account already exists with this phone number.");
     error.statusCode = 409;
     throw error;
   }
