@@ -97,6 +97,7 @@ const api = async (path, options = {}) => {
   const method = String(options.method || "GET").toUpperCase();
   const needsAdminToken = (
     path.startsWith("/api/admin") ||
+    (path.startsWith("/api/contact-messages") && method !== "POST") ||
     path.startsWith("/api/customers") ||
     path.startsWith("/api/email-outbox") ||
     path.startsWith("/api/invoice") ||
@@ -249,6 +250,8 @@ const translations = {
   "Business hours": "Horaires",
   "Monday to Saturday": "Lundi à samedi",
   "Send message": "Envoyer le message",
+  "Sending...": "Envoi...",
+  "Message sent. Idukki Spices will reply by email.": "Message envoyé. Idukki Spices répondra par e-mail.",
   "Contact details": "Coordonnées",
   "Quick contact": "Contact rapide",
   "Need help with an order or product?": "Besoin d'aide avec une commande ou un produit ?",
@@ -807,18 +810,23 @@ function About() {
 }
 
 function Contact() {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
-  const send = (event) => {
+  const send = async (event) => {
     event.preventDefault();
-    const subject = encodeURIComponent(`Idukki Spices enquiry from ${form.name || "customer"}`);
-    const body = encodeURIComponent([
-      `Name: ${form.name}`,
-      `Email: ${form.email}`,
-      "",
-      form.message
-    ].join("\n"));
-    window.location.href = `mailto:${companyContactEmail}?subject=${subject}&body=${body}`;
+    setBusy(true);
+    setNote("");
+    try {
+      await api("/api/contact-messages", { method: "POST", body: JSON.stringify(form) });
+      setForm({ name: "", email: "", phone: "", message: "" });
+      setNote("Message sent. Idukki Spices will reply by email.");
+    } catch (error) {
+      setNote(error.message);
+    } finally {
+      setBusy(false);
+    }
   };
   return (
     <main>
@@ -867,11 +875,13 @@ function Contact() {
           <p className="muted">Write to us and include your order number if you already purchased.</p>
           <Field label="Full name" value={form.name} onChange={(value) => update("name", value)} required />
           <Field label="Email" type="email" value={form.email} onChange={(value) => update("email", value)} required />
+          <Field label="Phone" type="tel" value={form.phone} onChange={(value) => update("phone", value)} placeholder="+33782504514" />
           <label className="field">
             <span>Message</span>
             <textarea value={form.message} onChange={(event) => update("message", event.target.value)} placeholder="How can we help?" required />
           </label>
-          <button className="primary" type="submit"><Mail size={18} /> Send message</button>
+          <button className="primary" disabled={busy} type="submit"><Mail size={18} /> {busy ? "Sending..." : "Send message"}</button>
+          {note && <p className="notice compact">{note}</p>}
         </form>
       </section>
     </main>
@@ -1485,6 +1495,7 @@ function Admin({ products, setProducts }) {
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [note, setNote] = useState("");
   const [activeSection, setActiveSection] = useState("overview");
   const [activeOrderStatus, setActiveOrderStatus] = useState("New order");
@@ -1495,6 +1506,7 @@ function Admin({ products, setProducts }) {
       setOrders(await api("/api/orders"));
       setCustomers(await api("/api/customers"));
       setNotifications(await api("/api/admin/notifications"));
+      setMessages(await api("/api/contact-messages"));
     } catch (error) {
       sessionStorage.removeItem(adminKey);
       setToken(null);
@@ -1530,13 +1542,15 @@ function Admin({ products, setProducts }) {
     ["overview", "Overview", <BarChart3 size={18} />],
     ["orders", "Orders", <Package size={18} />],
     ["products", "Products", <ShoppingBag size={18} />],
-    ["accounts", "Accounts", <UserRound size={18} />]
+    ["accounts", "Accounts", <UserRound size={18} />],
+    ["messages", "Messages", <Mail size={18} />]
   ];
   const paidOrders = orders.filter((order) => order.paymentStatus === "Paid").length;
   const pendingOrders = orders.filter((order) => order.paymentStatus === "Pending").length;
   const revenue = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
   const deliveryStatuses = ["New order", "Processing", "Packed", "Shipped", "Delivered", "Cancelled"];
   const visibleOrders = orders.filter((order) => (order.deliveryStatus || "New order") === activeOrderStatus);
+  const unreadMessages = messages.filter((message) => message.status !== "Replied").length;
   const deleteOrder = async (order) => {
     const ok = window.confirm(`Delete order ${order.id}? This cannot be undone.`);
     if (!ok) return;
@@ -1577,6 +1591,15 @@ function Admin({ products, setProducts }) {
       setNote(error.message);
     }
   };
+  const updateMessageStatus = async (message, status) => {
+    try {
+      const updated = await api("/api/contact-messages", { method: "PUT", body: JSON.stringify({ id: message.id, status }) });
+      setMessages((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setNote(`Message marked ${status.toLowerCase()}.`);
+    } catch (error) {
+      setNote(error.message);
+    }
+  };
 
   return (
     <main className="admin-shell">
@@ -1608,12 +1631,14 @@ function Admin({ products, setProducts }) {
               <Stat icon={<Package />} label="Products" value={products.length} />
               <Stat icon={<BarChart3 />} label="Orders" value={orders.length} />
               <Stat icon={<UserRound />} label="Customers" value={customers.length} />
+              <Stat icon={<Mail />} label="Messages" value={messages.length} />
               <Stat icon={<CreditCard />} label="Revenue" value={money(revenue)} />
             </div>
             <div className="admin-quick-grid">
               <button onClick={() => setActiveSection("orders")} type="button"><Package size={20} /><strong>Manage orders</strong><span>{pendingOrders} pending · {paidOrders} paid</span></button>
               <button onClick={() => setActiveSection("products")} type="button"><ShoppingBag size={20} /><strong>Edit products</strong><span>{products.length} product records</span></button>
               <button onClick={() => setActiveSection("accounts")} type="button"><UserRound size={20} /><strong>Customer accounts</strong><span>{customers.length} saved accounts</span></button>
+              <button onClick={() => setActiveSection("messages")} type="button"><Mail size={20} /><strong>Contact messages</strong><span>{unreadMessages} need review</span></button>
             </div>
           </section>
         )}
@@ -1677,8 +1702,59 @@ function Admin({ products, setProducts }) {
             </div>
           </section>
         )}
+        {activeSection === "messages" && (
+          <section className="panel admin-panel">
+            <h2>Contact messages</h2>
+            {messages.length ? (
+              <div className="admin-message-scroll">
+                {messages.map((message) => (
+                  <AdminContactMessage key={message.id} message={message} onStatus={updateMessageStatus} />
+                ))}
+              </div>
+            ) : <p className="muted">No contact messages yet.</p>}
+          </section>
+        )}
       </section>
     </main>
+  );
+}
+
+function AdminContactMessage({ message, onStatus }) {
+  const created = message.createdAt ? new Date(message.createdAt).toLocaleString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }) : "Date unavailable";
+  const replySubject = encodeURIComponent("Reply from Idukki Spices");
+  const replyBody = encodeURIComponent([
+    `Hello ${message.name},`,
+    "",
+    "Thank you for contacting Idukki Spices.",
+    "",
+    "Regards,",
+    "Idukki Spices"
+  ].join("\n"));
+  return (
+    <article className={`admin-message ${message.status === "New" ? "unread" : ""}`}>
+      <header>
+        <div>
+          <strong>{message.name}</strong>
+          <span>{message.email}{message.phone ? ` · ${message.phone}` : ""}</span>
+        </div>
+        <b>{message.status}</b>
+      </header>
+      <p>{message.message}</p>
+      <footer>
+        <span>{created}</span>
+        <div>
+          <a className="ghost small" href={`mailto:${message.email}?subject=${replySubject}&body=${replyBody}`}>Reply</a>
+          <button className="ghost small" disabled={message.status === "Read"} onClick={() => onStatus(message, "Read")} type="button">Mark read</button>
+          <button className="primary small" disabled={message.status === "Replied"} onClick={() => onStatus(message, "Replied")} type="button">Mark replied</button>
+        </div>
+      </footer>
+    </article>
   );
 }
 

@@ -78,6 +78,17 @@ function customerInsertSql(customer) {
   `;
 }
 
+function contactMessageInsertSql(message) {
+  return `
+    INSERT OR REPLACE INTO contact_messages
+      (id, created_at, name, email, phone, message, status, replied_at)
+    VALUES
+      (${sqlValue(message.id)}, ${sqlValue(message.createdAt)}, ${sqlValue(message.name)},
+       ${sqlValue(message.email)}, ${sqlValue(message.phone || "")}, ${sqlValue(message.message)},
+       ${sqlValue(message.status || "New")}, ${sqlValue(message.repliedAt || "")});
+  `;
+}
+
 function normalizeOrder(order) {
   const customerEmail = order.customerEmail || order.customer?.email || "";
   const linkedCustomer = order.customerId ? null : getCustomerByIdentity(customerEmail);
@@ -164,6 +175,17 @@ function initDatabase() {
       order_id TEXT,
       customer_email TEXT,
       is_read INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS contact_messages (
+      id TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      phone TEXT,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'New',
+      replied_at TEXT
     );
   `);
 
@@ -361,6 +383,42 @@ function markAdminNotificationsRead() {
   return getAdminNotifications();
 }
 
+function createContactMessage(input = {}) {
+  const message = {
+    id: input.id || `MSG-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    createdAt: input.createdAt || new Date().toISOString(),
+    name: String(input.name || "").trim(),
+    email: String(input.email || "").trim().toLowerCase(),
+    phone: String(input.phone || "").trim(),
+    message: String(input.message || "").trim(),
+    status: "New",
+    repliedAt: ""
+  };
+  run(contactMessageInsertSql(message));
+  return message;
+}
+
+function getContactMessages() {
+  return all(`
+    SELECT id, created_at AS createdAt, name, email, phone, message, status, replied_at AS repliedAt
+    FROM contact_messages
+    ORDER BY created_at DESC;
+  `);
+}
+
+function updateContactMessage(id, changes = {}) {
+  const existing = getContactMessages().find((message) => message.id === id);
+  if (!existing) return null;
+  const updated = {
+    ...existing,
+    ...changes,
+    status: changes.status || existing.status,
+    repliedAt: changes.status === "Replied" && !existing.repliedAt ? new Date().toISOString() : (changes.repliedAt ?? existing.repliedAt)
+  };
+  run(contactMessageInsertSql(updated));
+  return updated;
+}
+
 const frenchProductNames = {
   "green-cardamom-50": "Cardamome verte 50g",
   "green-cardamom-100": "Cardamome verte 100g",
@@ -495,5 +553,8 @@ module.exports = {
   createAdminNotification,
   getAdminNotifications,
   markAdminNotificationsRead,
+  createContactMessage,
+  getContactMessages,
+  updateContactMessage,
   getOutbox
 };

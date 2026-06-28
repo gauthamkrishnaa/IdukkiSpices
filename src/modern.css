@@ -1744,7 +1744,7 @@ h3 {
 
 .admin-quick-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -1906,6 +1906,79 @@ h3 {
 
 .admin-order-scroll .admin-order:last-child {
   border-bottom: 0;
+}
+
+.admin-message-scroll {
+  display: grid;
+  gap: 12px;
+  max-height: min(620px, calc(100svh - 300px));
+  overflow-y: auto;
+  padding-right: 8px;
+  overscroll-behavior: contain;
+}
+
+.admin-message {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fffdf8;
+}
+
+.admin-message.unread {
+  border-color: rgba(47, 111, 68, 0.34);
+  background: #eef8ee;
+}
+
+.admin-message header,
+.admin-message footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-message header div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.admin-message header span,
+.admin-message footer span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.admin-message b {
+  min-width: 70px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(47, 111, 68, 0.12);
+  color: var(--leaf-dark);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.admin-message p {
+  margin: 0;
+  color: #4f4036;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.admin-message footer div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-message a.ghost {
+  text-decoration: none;
 }
 
 .admin-order {

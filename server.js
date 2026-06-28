@@ -686,6 +686,50 @@ async function handleApi(req, res, url) {
     }
   }
 
+  if (url.pathname === "/api/contact-messages") {
+    if (req.method === "POST") {
+      const body = await readBody(req);
+      const name = String(body?.name || "").trim();
+      const email = normalizeEmail(body?.email);
+      const phone = String(body?.phone || "").trim();
+      const messageText = String(body?.message || "").trim();
+      if (!name) return sendJson(res, 400, { error: "Name is required." });
+      if (!validEmail(email)) return sendJson(res, 400, { error: "Enter a valid email address." });
+      if (messageText.length < 5) return sendJson(res, 400, { error: "Message is too short." });
+      const message = database.createContactMessage({ name, email, phone, message: messageText });
+      database.createAdminNotification({
+        type: "contact-message",
+        title: "New contact message",
+        body: `${name} sent a message: ${messageText.slice(0, 160)}${messageText.length > 160 ? "..." : ""}`,
+        customerEmail: email
+      });
+      await sendEmail(companyEmail(), `Idukki Spices contact: ${name}`, [
+        "New contact message from the website",
+        "",
+        `Name: ${name}`,
+        `Email: ${email}`,
+        phone ? `Phone: ${phone}` : "",
+        "",
+        messageText,
+        "",
+        "Reply directly to the customer email above, or mark the message in the admin dashboard."
+      ].filter(Boolean).join("\n")).catch((error) => ({ sent: false, error: error.message }));
+      return sendJson(res, 201, message);
+    }
+    if (!requireAdmin(req, res)) return;
+    if (req.method === "GET") return sendJson(res, 200, database.getContactMessages());
+    if (req.method === "PUT") {
+      const body = await readBody(req);
+      const id = String(body?.id || "");
+      const status = String(body?.status || "");
+      if (!id) return sendJson(res, 400, { error: "Message id is required." });
+      if (!["New", "Read", "Replied"].includes(status)) return sendJson(res, 400, { error: "Invalid message status." });
+      const updated = database.updateContactMessage(id, { status });
+      if (!updated) return sendJson(res, 404, { error: "Message not found." });
+      return sendJson(res, 200, updated);
+    }
+  }
+
   if (url.pathname === "/api/accounts/register" && req.method === "POST") {
     const body = await readBody(req);
     if (!validEmail(body?.email)) return sendJson(res, 400, { error: "Enter a valid email address, for example you@example.com." });
