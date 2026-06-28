@@ -1623,7 +1623,7 @@ function Admin({ products, setProducts }) {
         <div className="admin-head">
           <SectionTitle eyebrow="Operations" title={adminTabs.find(([id]) => id === activeSection)?.[1] || "Overview"} />
         </div>
-        <AdminNotificationBar notifications={notifications} onMarkRead={markNotificationsRead} />
+        {activeSection === "overview" && <AdminNotificationBar notifications={notifications} onMarkRead={markNotificationsRead} />}
         {note && <p className="notice compact">{note}</p>}
         {activeSection === "overview" && (
           <section className="admin-section-stack">
