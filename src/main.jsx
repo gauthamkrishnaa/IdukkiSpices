@@ -171,7 +171,7 @@ const translations = {
   "Premium cardamom, pepper, warm whole spices, and ready-to-cook mixed packs with a simple secure checkout.": "Cardamome, poivre, épices entières et mélanges prêts à cuisiner avec un paiement sécurisé simple.",
   "Shop spices": "Acheter des épices",
   "Our plantation story": "Notre histoire",
-  "Stripe test checkout ready": "Paiement Stripe test prêt",
+  "Secure online checkout": "Paiement en ligne sécurisé",
   "Featured": "Sélection",
   "Fresh packs customers can buy quickly": "Des sachets frais à acheter rapidement",
   "Sourced from Idukki inspired farms": "Inspiré des plantations d'Idukki",
@@ -779,7 +779,7 @@ function Hero({ go }) {
       </div>
       <div className="hero-media">
         <img src="/assets/cardamom-closeup.webp" alt="Green cardamom pods" />
-        <div className="floating-proof"><ShieldCheck size={20} /> Stripe test checkout ready</div>
+        <div className="floating-proof"><ShieldCheck size={20} /> Secure online checkout</div>
       </div>
     </section>
   );
