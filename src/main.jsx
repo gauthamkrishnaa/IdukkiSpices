@@ -34,6 +34,8 @@ const customerKey = "idukki-customer-session";
 const customerDataKey = "idukki-current-customer";
 const accountSectionKey = "idukki-account-section";
 const themeKey = "idukki-theme";
+const customerNotificationsKey = "idukki-customer-notifications";
+const customerOrderSnapshotKey = "idukki-customer-order-snapshots";
 
 const countries = [
   ["🇦🇫", "Afghanistan", "+93"], ["🇦🇱", "Albania", "+355"], ["🇩🇿", "Algeria", "+213"], ["🇦🇩", "Andorra", "+376"],
@@ -125,6 +127,29 @@ const readJsonStorage = (storage, key, fallback) => {
     storage.removeItem(key);
     return fallback;
   }
+};
+
+const customerScopedKey = (base, customer) => `${base}:${String(customer?.email || "guest").trim().toLowerCase()}`;
+
+const notificationForStatus = (order, field, status) => {
+  const id = order.id || "your order";
+  const total = money(order.total);
+  if (field === "paymentStatus") {
+    const paymentMessages = {
+      Paid: ["Order confirmed", `Payment received for ${id}. Total paid: ${total}.`],
+      "Refund requested": ["Refund requested", `Your refund request for ${id} was sent to Idukki Spices.`],
+      Refunded: ["Refund approved", `Refund for ${id} has been approved and credited by the shop.`]
+    };
+    return paymentMessages[status] || null;
+  }
+  const deliveryMessages = {
+    Processing: ["Order processing", `${id} is now being prepared.`],
+    Packed: ["Order packed", `${id} has been packed and will be shipped soon.`],
+    Shipped: ["Order shipped", `${id} is on the way.`],
+    Delivered: ["Order delivered", `${id} has been marked as delivered.`],
+    Cancelled: ["Order cancelled", `${id} has been cancelled.`]
+  };
+  return deliveryMessages[status] || null;
 };
 
 const translations = {
@@ -385,6 +410,8 @@ function App() {
   const [lang, setLang] = useState(() => localStorage.getItem("idukki-language") || "en");
   const [theme, setTheme] = useState(() => localStorage.getItem(themeKey) || "light");
   const [pageBusy, setPageBusy] = useState(false);
+  const [customerNotifications, setCustomerNotifications] = useState([]);
+  const [cartToast, setCartToast] = useState(null);
 
   useEffect(() => {
     api("/api/products").then(setProducts).catch(() => setProducts([]));
@@ -403,6 +430,20 @@ function App() {
   useEffect(() => {
     localStorage.setItem(cartKey, JSON.stringify(cart));
   }, [cart]);
+
+  useEffect(() => {
+    if (!customer) {
+      setCustomerNotifications([]);
+      return;
+    }
+    setCustomerNotifications(readJsonStorage(localStorage, customerScopedKey(customerNotificationsKey, customer), []));
+  }, [customer?.email]);
+
+  useEffect(() => {
+    if (!cartToast) return undefined;
+    const timer = window.setTimeout(() => setCartToast(null), 2600);
+    return () => window.clearTimeout(timer);
+  }, [cartToast]);
 
   useEffect(() => {
     if (!customer) return;
@@ -448,8 +489,92 @@ function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
+  const saveCustomerNotifications = (next) => {
+    setCustomerNotifications(next);
+    if (customer) {
+      localStorage.setItem(customerScopedKey(customerNotificationsKey, customer), JSON.stringify(next));
+    }
+  };
+
+  const addCustomerNotification = (title, body) => {
+    if (!customer || !title) return;
+    const next = [
+      {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        title,
+        body,
+        createdAt: new Date().toISOString(),
+        read: false
+      },
+      ...readJsonStorage(localStorage, customerScopedKey(customerNotificationsKey, customer), [])
+    ].slice(0, 30);
+    saveCustomerNotifications(next);
+  };
+
+  const clearCustomerNotifications = () => {
+    if (customer) localStorage.removeItem(customerScopedKey(customerNotificationsKey, customer));
+    setCustomerNotifications([]);
+  };
+
+  const markCustomerNotificationsRead = () => {
+    if (!customerNotifications.some((item) => !item.read)) return;
+    const next = customerNotifications.map((item) => ({ ...item, read: true }));
+    saveCustomerNotifications(next);
+  };
+
+  const syncCustomerOrderNotifications = (orders = []) => {
+    if (!customer) return;
+    const snapshotKey = customerScopedKey(customerOrderSnapshotKey, customer);
+    const previous = readJsonStorage(localStorage, snapshotKey, null);
+    const nextSnapshot = orders.reduce((snapshot, order) => {
+      snapshot[order.id] = {
+        paymentStatus: order.paymentStatus || "",
+        deliveryStatus: order.deliveryStatus || ""
+      };
+      return snapshot;
+    }, {});
+
+    if (previous) {
+      const updates = [];
+      orders.forEach((order) => {
+        const before = previous[order.id];
+        if (!before) return;
+        [
+          ["paymentStatus", order.paymentStatus || ""],
+          ["deliveryStatus", order.deliveryStatus || ""]
+        ].forEach(([field, status]) => {
+          if (before[field] === status) return;
+          const message = notificationForStatus(order, field, status);
+          if (message) {
+            updates.push({
+              id: `${order.id}-${field}-${status}-${Date.now()}`,
+              title: message[0],
+              body: message[1],
+              createdAt: new Date().toISOString(),
+              read: false
+            });
+          }
+        });
+      });
+      if (updates.length) {
+        const existing = readJsonStorage(localStorage, customerScopedKey(customerNotificationsKey, customer), []);
+        saveCustomerNotifications([...updates, ...existing].slice(0, 30));
+      }
+    }
+    localStorage.setItem(snapshotKey, JSON.stringify(nextSnapshot));
+  };
+
   const addToCart = (id, amount = 1) => {
     setCart((current) => ({ ...current, [id]: Math.max(0, (current[id] || 0) + amount) }));
+    if (amount > 0) {
+      const product = products.find((item) => item.id === id);
+      const displayProduct = localizeProduct(product, lang);
+      setCartToast({
+        id: Date.now(),
+        title: lang === "fr" ? "Ajouté au panier" : "Added to cart",
+        message: `${amount} x ${displayProduct?.name || "Item"}`
+      });
+    }
   };
 
   const cartItems = useMemo(() => products
@@ -460,7 +585,7 @@ function App() {
   const orderTotal = cartTotal + shippingFee;
   const canCheckout = cartTotal >= MIN_ORDER_VALUE;
 
-  const props = { go, products, cart, setCart, addToCart, cartItems, cartTotal, shippingFee, orderTotal, canCheckout, customer, setCustomer, lang, theme, setTheme };
+  const props = { go, products, cart, setCart, addToCart, cartItems, cartTotal, shippingFee, orderTotal, canCheckout, customer, setCustomer, lang, theme, setTheme, addCustomerNotification, syncCustomerOrderNotifications };
   const view = {
     index: <Home {...props} />,
     about: <About />,
@@ -468,10 +593,10 @@ function App() {
     cart: <Cart {...props} />,
     checkout: <Checkout {...props} />,
     auth: <Auth setCustomer={setCustomer} go={go} />,
-    account: <Account customer={customer} setCustomer={setCustomer} setCart={setCart} go={go} lang={lang} theme={theme} setTheme={setTheme} />,
+    account: <Account customer={customer} setCustomer={setCustomer} setCart={setCart} go={go} lang={lang} theme={theme} setTheme={setTheme} addCustomerNotification={addCustomerNotification} syncCustomerOrderNotifications={syncCustomerOrderNotifications} />,
     admin: <Admin products={products} setProducts={setProducts} />,
     invoice: <Invoice />,
-    "payment-success": <PaymentSuccess go={go} />,
+    "payment-success": <PaymentSuccess go={go} addCustomerNotification={addCustomerNotification} />,
     "order-detail": <OrderDetail lang={lang} />
   }[page] || <Home {...props} />;
   const isAdminPage = page === "admin" || page === "invoice";
@@ -486,14 +611,23 @@ function App() {
           </div>
         </div>
       )}
-      {!isAdminPage && <Header go={go} page={page} cartCount={cartItems.reduce((sum, item) => sum + item.qty, 0)} customer={customer} lang={lang} setLang={setLang} />}
+      {!isAdminPage && <Header go={go} page={page} cartCount={cartItems.reduce((sum, item) => sum + item.qty, 0)} customer={customer} lang={lang} setLang={setLang} notifications={customerNotifications} onOpenNotifications={markCustomerNotificationsRead} onClearNotifications={clearCustomerNotifications} />}
+      {cartToast && (
+        <div className="cart-toast" role="status" aria-live="polite">
+          <ShoppingBag size={20} />
+          <div>
+            <strong>{cartToast.title}</strong>
+            <span>{cartToast.message}</span>
+          </div>
+        </div>
+      )}
       {view}
       {!isAdminPage && <Footer />}
     </React.Fragment>
   );
 }
 
-function Header({ go, page, cartCount, customer, lang, setLang }) {
+function Header({ go, page, cartCount, customer, lang, setLang, notifications = [], onOpenNotifications, onClearNotifications }) {
   const links = [["index", "Home"], ["about", "About"], ["shop", "Shop"], ["cart", "Cart"], ["auth", customer ? "My account" : "Login"]];
   const pathFor = (id) => id === "index" ? "/" : `/${id}.html`;
   const follow = (event, id) => {
@@ -512,12 +646,58 @@ function Header({ go, page, cartCount, customer, lang, setLang }) {
             {label}{id === "cart" && <b>{cartCount}</b>}
           </a>
         ))}
+        {customer && (
+          <CustomerNotificationBell
+            notifications={notifications}
+            onOpen={onOpenNotifications}
+            onClear={onClearNotifications}
+          />
+        )}
         <div className="language-toggle" aria-label="Language">
           <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")} type="button">EN</button>
           <button className={lang === "fr" ? "active" : ""} onClick={() => setLang("fr")} type="button">FR</button>
         </div>
       </nav>
     </header>
+  );
+}
+
+function CustomerNotificationBell({ notifications, onOpen, onClear }) {
+  const [open, setOpen] = useState(false);
+  const unread = notifications.filter((item) => !item.read).length;
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next) onOpen?.();
+  };
+  return (
+    <div className="customer-notification">
+      <button className={`notification-bell ${unread ? "has-unread" : ""}`} onClick={toggle} type="button" aria-label="Notifications">
+        <Bell size={19} />
+        {unread > 0 && <b>{unread}</b>}
+      </button>
+      {open && (
+        <div className="customer-notification-panel">
+          <div className="notification-head">
+            <strong>Notifications</strong>
+            {notifications.length > 0 && <button onClick={onClear} type="button">Clear</button>}
+          </div>
+          {notifications.length ? (
+            <div className="customer-notification-list">
+              {notifications.map((item) => (
+                <article className={item.read ? "" : "unread"} key={item.id}>
+                  <strong>{item.title}</strong>
+                  <p>{item.body}</p>
+                  <span>{new Date(item.createdAt).toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="empty-notifications">No updates yet.</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -970,7 +1150,7 @@ function PhoneInput({ country, setCountry, value, onChange }) {
   );
 }
 
-function Account({ customer, setCustomer, setCart, go, lang, theme, setTheme }) {
+function Account({ customer, setCustomer, setCart, go, lang, theme, setTheme, addCustomerNotification, syncCustomerOrderNotifications }) {
   const [orders, setOrders] = useState([]);
   const [orderError, setOrderError] = useState("");
   const [orderNote, setOrderNote] = useState("");
@@ -999,6 +1179,7 @@ function Account({ customer, setCustomer, setCart, go, lang, theme, setTheme }) 
       api("/api/account/orders")
         .then((data) => {
           setOrders(data);
+          syncCustomerOrderNotifications?.(data);
           setOrderError("");
         })
         .catch((error) => {
@@ -1036,6 +1217,7 @@ function Account({ customer, setCustomer, setCart, go, lang, theme, setTheme }) 
     try {
       const updated = await api("/api/account/orders/action", { method: "POST", body: JSON.stringify({ orderId: order.id, action: "cancel" }) });
       updateCustomerOrder(updated);
+      addCustomerNotification?.("Order cancelled", `${updated.id} has been cancelled.`);
       setOrderNote(isFrench ? "Commande annulée." : "Order cancelled.");
     } catch (error) {
       setOrderNote(error.message);
@@ -1049,6 +1231,7 @@ function Account({ customer, setCustomer, setCart, go, lang, theme, setTheme }) 
     try {
       const updated = await api("/api/account/orders/action", { method: "POST", body: JSON.stringify({ orderId: order.id, action: "refund" }) });
       updateCustomerOrder(updated);
+      addCustomerNotification?.("Refund requested", `Your refund request for ${updated.id} was sent to Idukki Spices.`);
       setOrderNote(isFrench ? "Demande de remboursement envoyée." : "Refund request sent.");
     } catch (error) {
       setOrderNote(error.message);
@@ -1520,7 +1703,7 @@ function ProductAdminRow({ product, setProducts }) {
   );
 }
 
-function PaymentSuccess({ go }) {
+function PaymentSuccess({ go, addCustomerNotification }) {
   const [message, setMessage] = useState("Confirming your payment...");
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1529,7 +1712,10 @@ function PaymentSuccess({ go }) {
     if (!orderId) return setMessage("Payment completed, but order id was missing.");
     if (!sessionId) return setMessage("Payment session was missing. Please contact support with your order id.");
     api("/api/payments/confirm", { method: "POST", body: JSON.stringify({ orderId, sessionId }) })
-      .then((data) => setMessage(data.warning ? `Payment successful, but invoice email needs attention: ${data.warning}` : "Payment successful. Your order confirmation and invoice have been sent."))
+      .then((data) => {
+        addCustomerNotification?.("Order confirmed", `Payment received for ${orderId}. Your invoice has been sent.`);
+        setMessage(data.warning ? `Payment successful, but invoice email needs attention: ${data.warning}` : "Payment successful. Your order confirmation and invoice have been sent.");
+      })
       .catch((error) => setMessage(error.message));
   }, []);
   return <main className="section success"><CheckCircle2 size={54} /><h1>{message}</h1><button className="primary" onClick={() => go("account")} type="button">View account</button></main>;
