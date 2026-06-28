@@ -41,6 +41,7 @@ const customerOrderSnapshotKey = "idukki-customer-order-snapshots";
 const companyContactEmail = "idukkispicesfr@gmail.com";
 const companyContactPhone = "+33 7 82 50 45 14";
 const companyContactLocation = "Paris, France";
+const companyInstagramUrl = "https://www.instagram.com/idukkispicesfr?utm_source=qr";
 
 const countries = [
   ["🇦🇫", "Afghanistan", "+93"], ["🇦🇱", "Albania", "+355"], ["🇩🇿", "Algeria", "+213"], ["🇦🇩", "Andorra", "+376"],
@@ -654,16 +655,17 @@ function App() {
 
 function Header({ go, page, cartCount, customer, lang, setLang, notifications = [], onOpenNotifications, onClearNotifications }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const links = [["index", "Home"], ["about", "About"], ["shop", "Shop"], ["contact", "Contact"], ["cart", "Cart"], ["auth", customer ? "My account" : "Login"]];
+  const links = [["index", "Home"], ["about", "About"], ["shop", "Shop"], ["cart", "Cart"], ["contact", "Contact"], ["auth", customer ? "My account" : "Login"]];
+  const mobileLinks = [["auth", customer ? "My account" : "Login"], ["index", "Home"], ["about", "About"], ["shop", "Shop"], ["cart", "Cart"], ["contact", "Contact"]];
   const pathFor = (id) => id === "index" ? "/" : `/${id}.html`;
   const follow = (event, id) => {
     event.preventDefault();
     setMenuOpen(false);
     go(id === "auth" && customer ? "account" : id);
   };
-  const navLinks = (className = "", { showLanguage = true, showNotifications = true } = {}) => (
+  const navLinks = (className = "", { showLanguage = true, showNotifications = true, items = links } = {}) => (
     <nav className={className}>
-      {links.map(([id, label]) => (
+      {items.map(([id, label]) => (
         <a className={page === id ? "active" : ""} href={pathFor(id === "auth" && customer ? "account" : id)} key={id} onClick={(event) => follow(event, id)}>
           {label}{id === "cart" && <b>{cartCount}</b>}
         </a>
@@ -718,7 +720,7 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
                 <X size={24} />
               </button>
             </div>
-            {navLinks("mobile-nav", { showLanguage: false, showNotifications: false })}
+            {navLinks("mobile-nav", { showLanguage: false, showNotifications: false, items: mobileLinks })}
           </aside>
         </div>
       )}
@@ -904,6 +906,13 @@ function Contact() {
             </div>
           </article>
           <article>
+            <InstagramIcon size={22} />
+            <div>
+              <span>Instagram</span>
+              <a href={companyInstagramUrl} target="_blank" rel="noreferrer">@idukkispicesfr</a>
+            </div>
+          </article>
+          <article>
             <Truck size={22} />
             <div>
               <span>Business hours</span>
@@ -992,7 +1001,7 @@ function ProductCard({ product, cart, addToCart, onView, lang }) {
         <div className="buy-controls" onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
           <div className="counter">
             <button disabled={!selectedQty} onClick={() => setSelectedQty((qty) => Math.max(0, qty - 1))} type="button" aria-label={`Decrease selected ${displayProduct.name}`}>-</button>
-            <span>{selectedQty}</span>
+            <QuantityInput value={selectedQty} onChange={setSelectedQty} label={`Selected quantity for ${displayProduct.name}`} />
             <button onClick={() => setSelectedQty((qty) => qty + 1)} type="button" aria-label={`Increase selected ${displayProduct.name}`}>+</button>
           </div>
           <button className="primary small" disabled={selectedQty === cartQty} onClick={addSelected} type="button">{cartQty ? "Update cart" : "Add to cart"}</button>
@@ -1031,7 +1040,7 @@ function QuickView({ product, cart, addToCart, onClose, lang }) {
           <div className="buy-controls quick-buy">
             <div className="counter wide">
               <button disabled={!selectedQty} onClick={() => setSelectedQty((qty) => Math.max(0, qty - 1))} type="button">-</button>
-              <span>{selectedQty}</span>
+              <QuantityInput value={selectedQty} onChange={setSelectedQty} label={`Selected quantity for ${displayProduct.name}`} />
               <button onClick={() => setSelectedQty((qty) => qty + 1)} type="button">+</button>
             </div>
             <button className="primary" disabled={selectedQty === cartQty} onClick={addSelected} type="button"><Plus size={18} /> {cartQty ? "Update cart" : "Add to cart"}</button>
@@ -1043,6 +1052,9 @@ function QuickView({ product, cart, addToCart, onClose, lang }) {
 }
 
 function Cart({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, addToCart, setCart, go, lang }) {
+  const setCartItemQty = (id, qty) => {
+    setCart((current) => ({ ...current, [id]: qty }));
+  };
   return (
     <main className="section cart-layout">
       <section>
@@ -1056,7 +1068,7 @@ function Cart({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, addT
               <div><h3>{displayItem.name}</h3><p>{item.qty} x {money(item.price)}</p></div>
               <div className="counter">
                 <button onClick={() => addToCart(item.id, -1)} type="button">-</button>
-                <span>{item.qty}</span>
+                <QuantityInput value={item.qty} onChange={(qty) => setCartItemQty(item.id, qty)} label={`Quantity for ${displayItem.name}`} />
                 <button onClick={() => addToCart(item.id, 1)} type="button">+</button>
               </div>
             </article>
@@ -1076,6 +1088,23 @@ function Cart({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, addT
         </aside>
       )}
     </main>
+  );
+}
+
+function QuantityInput({ value, onChange, label }) {
+  const clean = (input) => String(input || "").replace(/\D/g, "");
+  return (
+    <input
+      aria-label={label}
+      className="quantity-input"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      min="0"
+      type="text"
+      value={String(value)}
+      onChange={(event) => onChange(Number(clean(event.target.value) || 0))}
+      onClick={(event) => event.stopPropagation()}
+    />
   );
 }
 
@@ -1586,14 +1615,17 @@ function Admin({ products, setProducts }) {
     ["accounts", "Accounts", <UserRound size={18} />],
     ["messages", "Messages", <Mail size={18} />]
   ];
-  const paidOrders = orders.filter((order) => order.paymentStatus === "Paid").length;
+  const activePaidOrders = orders.filter((order) => order.paymentStatus === "Paid" && order.deliveryStatus !== "Cancelled");
+  const paidOrders = activePaidOrders.length;
   const pendingOrders = orders.filter((order) => order.paymentStatus === "Pending").length;
   const refundedOrders = orders.filter((order) => order.paymentStatus === "Refunded").length;
+  const pendingRefundTotal = orders
+    .filter((order) => order.paymentStatus === "Refund requested" || (order.paymentStatus === "Paid" && order.deliveryStatus === "Cancelled"))
+    .reduce((sum, order) => sum + Number(order.total || 0), 0);
   const refundedTotal = orders
     .filter((order) => order.paymentStatus === "Refunded")
     .reduce((sum, order) => sum + Number(order.total || 0), 0);
-  const revenue = orders
-    .filter((order) => ["Paid", "Refund requested"].includes(order.paymentStatus))
+  const revenue = activePaidOrders
     .reduce((sum, order) => sum + Number(order.total || 0), 0);
   const deliveryStatuses = ["New order", "Processing", "Packed", "Shipped", "Delivered", "Cancelled"];
   const visibleOrders = orders.filter((order) => (order.deliveryStatus || "New order") === activeOrderStatus);
@@ -1680,6 +1712,7 @@ function Admin({ products, setProducts }) {
               <Stat icon={<UserRound />} label="Customers" value={customers.length} />
               <Stat icon={<Mail />} label="Messages" value={messages.length} />
               <Stat icon={<CreditCard />} label="Net revenue" value={money(revenue)} />
+              <Stat icon={<CreditCard />} label="Pending refund" value={money(pendingRefundTotal)} />
               <Stat icon={<CreditCard />} label="Refunded" value={money(refundedTotal)} />
             </div>
             <div className="admin-quick-grid">
@@ -2143,6 +2176,16 @@ function Stat({ icon, label, value }) {
   return <article className="stat">{icon}<span>{label}</span><strong>{value}</strong></article>;
 }
 
+function InstagramIcon({ size = 20 }) {
+  return (
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5.2" stroke="currentColor" strokeWidth="2" />
+      <circle cx="12" cy="12" r="4.1" stroke="currentColor" strokeWidth="2" />
+      <circle cx="17.15" cy="6.85" r="1.25" fill="currentColor" />
+    </svg>
+  );
+}
+
 function Empty({ title, action, onClick }) {
   return <div className="empty"><Sparkles /><h2>{title}</h2>{action && <button className="primary" onClick={onClick} type="button">{action}</button>}</div>;
 }
@@ -2157,6 +2200,7 @@ function Footer() {
       <div className="footer-contact">
         <a href={`mailto:${companyContactEmail}`}><Mail size={17} /> {companyContactEmail}</a>
         <a href={`tel:${companyContactPhone.replace(/\s/g, "")}`}><Phone size={17} /> {companyContactPhone}</a>
+        <a href={companyInstagramUrl} target="_blank" rel="noreferrer"><InstagramIcon size={17} /> @idukkispicesfr</a>
         <span><MapPin size={17} /> {companyContactLocation}</span>
       </div>
     </footer>
