@@ -36,6 +36,9 @@ const accountSectionKey = "idukki-account-section";
 const themeKey = "idukki-theme";
 const customerNotificationsKey = "idukki-customer-notifications";
 const customerOrderSnapshotKey = "idukki-customer-order-snapshots";
+const companyContactEmail = "idukkispicesfr@gmail.com";
+const companyContactPhone = "+33 7 82 50 45 14";
+const companyContactLocation = "Paris, France";
 
 const countries = [
   ["🇦🇫", "Afghanistan", "+93"], ["🇦🇱", "Albania", "+355"], ["🇩🇿", "Algeria", "+213"], ["🇦🇩", "Andorra", "+376"],
@@ -158,6 +161,7 @@ const translations = {
   "Shop": "Boutique",
   "Cart": "Panier",
   "Login": "Connexion",
+  "Contact": "Contact",
   "My account": "Mon compte",
   "Kerala aroma, packed with care": "Arôme du Kerala, emballé avec soin",
   "Idukki Spices for real kitchens": "Idukki Spices pour les vraies cuisines",
@@ -239,6 +243,21 @@ const translations = {
   "Latest status": "Dernier statut",
   "No orders": "Aucune commande",
   "No orders yet": "Aucune commande pour le moment",
+  "Contact Idukki Spices": "Contacter Idukki Spices",
+  "Questions, delivery help, product details, or business orders. Send a message and we will reply as soon as possible.": "Questions, aide à la livraison, détails produits ou commandes professionnelles. Envoyez un message et nous répondrons dès que possible.",
+  "Email us": "Envoyez-nous un e-mail",
+  "Business hours": "Horaires",
+  "Monday to Saturday": "Lundi à samedi",
+  "Send message": "Envoyer le message",
+  "Contact details": "Coordonnées",
+  "Quick contact": "Contact rapide",
+  "Need help with an order or product?": "Besoin d'aide avec une commande ou un produit ?",
+  "Write to us and include your order number if you already purchased.": "Écrivez-nous et ajoutez votre numéro de commande si vous avez déjà acheté.",
+  "Fresh Kerala-inspired spices, secure checkout, and quick support.": "Épices inspirées du Kerala, paiement sécurisé et assistance rapide.",
+  "Write to us": "Écrivez-nous",
+  "Message": "Message",
+  "How can we help?": "Comment pouvons-nous aider ?",
+  "Location": "Adresse",
   "Deactivate account": "Désactiver le compte",
   "This removes your saved login account and delivery details. Past orders stay with the shop for invoice and business records.": "Cela supprime votre compte de connexion et vos informations de livraison. Les anciennes commandes restent dans la boutique pour les factures et les documents professionnels.",
   "Are you sure?": "Êtes-vous sûr ?",
@@ -591,6 +610,7 @@ function App() {
     about: <About />,
     shop: <Shop {...props} />,
     cart: <Cart {...props} />,
+    contact: <Contact />,
     checkout: <Checkout {...props} />,
     auth: <Auth setCustomer={setCustomer} go={go} />,
     account: <Account customer={customer} setCustomer={setCustomer} setCart={setCart} go={go} lang={lang} theme={theme} setTheme={setTheme} addCustomerNotification={addCustomerNotification} syncCustomerOrderNotifications={syncCustomerOrderNotifications} />,
@@ -628,7 +648,7 @@ function App() {
 }
 
 function Header({ go, page, cartCount, customer, lang, setLang, notifications = [], onOpenNotifications, onClearNotifications }) {
-  const links = [["index", "Home"], ["about", "About"], ["shop", "Shop"], ["cart", "Cart"], ["auth", customer ? "My account" : "Login"]];
+  const links = [["index", "Home"], ["about", "About"], ["shop", "Shop"], ["contact", "Contact"], ["cart", "Cart"], ["auth", customer ? "My account" : "Login"]];
   const pathFor = (id) => id === "index" ? "/" : `/${id}.html`;
   const follow = (event, id) => {
     event.preventDefault();
@@ -786,6 +806,78 @@ function About() {
   );
 }
 
+function Contact() {
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const send = (event) => {
+    event.preventDefault();
+    const subject = encodeURIComponent(`Idukki Spices enquiry from ${form.name || "customer"}`);
+    const body = encodeURIComponent([
+      `Name: ${form.name}`,
+      `Email: ${form.email}`,
+      "",
+      form.message
+    ].join("\n"));
+    window.location.href = `mailto:${companyContactEmail}?subject=${subject}&body=${body}`;
+  };
+  return (
+    <main>
+      <section className="split-hero contact-hero">
+        <div>
+          <p className="kicker">Contact Idukki Spices</p>
+          <h1>Need help with an order or product?</h1>
+          <p>Questions, delivery help, product details, or business orders. Send a message and we will reply as soon as possible.</p>
+        </div>
+        <img src="/assets/idukki-plantation-wide.png" alt="Idukki spice plantation" />
+      </section>
+      <section className="section contact-grid">
+        <div className="contact-details">
+          <SectionTitle eyebrow="Contact details" title="Quick contact" />
+          <article>
+            <Mail size={22} />
+            <div>
+              <span>Email us</span>
+              <a href={`mailto:${companyContactEmail}`}>{companyContactEmail}</a>
+            </div>
+          </article>
+          <article>
+            <Phone size={22} />
+            <div>
+              <span>Phone</span>
+              <a href={`tel:${companyContactPhone.replace(/\s/g, "")}`}>{companyContactPhone}</a>
+            </div>
+          </article>
+          <article>
+            <MapPin size={22} />
+            <div>
+              <span>Location</span>
+              <strong>{companyContactLocation}</strong>
+            </div>
+          </article>
+          <article>
+            <Truck size={22} />
+            <div>
+              <span>Business hours</span>
+              <strong>Monday to Saturday</strong>
+            </div>
+          </article>
+        </div>
+        <form className="panel contact-form" onSubmit={send}>
+          <SectionTitle eyebrow="Write to us" title="Send message" />
+          <p className="muted">Write to us and include your order number if you already purchased.</p>
+          <Field label="Full name" value={form.name} onChange={(value) => update("name", value)} required />
+          <Field label="Email" type="email" value={form.email} onChange={(value) => update("email", value)} required />
+          <label className="field">
+            <span>Message</span>
+            <textarea value={form.message} onChange={(event) => update("message", event.target.value)} placeholder="How can we help?" required />
+          </label>
+          <button className="primary" type="submit"><Mail size={18} /> Send message</button>
+        </form>
+      </section>
+    </main>
+  );
+}
+
 function Shop(props) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
@@ -920,16 +1012,18 @@ function Cart({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, addT
           );
         }) : <Empty title="Your cart is empty" action="Start shopping" onClick={() => go("shop")} />}
       </section>
-      <aside className="summary-card">
-        <h2>Order summary</h2>
-        <p><span>Items</span><strong>{cartItems.length}</strong></p>
-        <p><span>Subtotal</span><strong>{money(cartTotal)}</strong></p>
-        <p><span>Shipping</span><ShippingPrice subtotal={cartTotal} shippingFee={shippingFee} lang={lang} /></p>
-        <p className="total"><span>Total</span><strong>{money(orderTotal)}</strong></p>
-        {!canCheckout && cartItems.length > 0 && <p className="notice compact">Add more spices to reach the €1 minimum order.</p>}
-        <button className="primary" disabled={!cartItems.length || !canCheckout} onClick={() => go("checkout")} type="button"><Lock size={18} /> Checkout</button>
-        <button className="ghost full" onClick={() => setCart({})} type="button">Clear cart</button>
-      </aside>
+      {cartItems.length > 0 && (
+        <aside className="summary-card">
+          <h2>Order summary</h2>
+          <p><span>Items</span><strong>{cartItems.length}</strong></p>
+          <p><span>Subtotal</span><strong>{money(cartTotal)}</strong></p>
+          <p><span>Shipping</span><ShippingPrice subtotal={cartTotal} shippingFee={shippingFee} lang={lang} /></p>
+          <p className="total"><span>Total</span><strong>{money(orderTotal)}</strong></p>
+          {!canCheckout && <p className="notice compact">Add more spices to reach the €1 minimum order.</p>}
+          <button className="primary" disabled={!canCheckout} onClick={() => go("checkout")} type="button"><Lock size={18} /> Checkout</button>
+          <button className="ghost full" onClick={() => setCart({})} type="button">Clear cart</button>
+        </aside>
+      )}
     </main>
   );
 }
@@ -1930,7 +2024,19 @@ function Empty({ title, action, onClick }) {
 }
 
 function Footer() {
-  return <footer><strong>Idukki Spices</strong><span>Fresh Kerala-inspired spices, secure checkout, and order tracking.</span></footer>;
+  return (
+    <footer className="site-footer">
+      <div>
+        <strong>Idukki Spices</strong>
+        <span>Fresh Kerala-inspired spices, secure checkout, and quick support.</span>
+      </div>
+      <div className="footer-contact">
+        <a href={`mailto:${companyContactEmail}`}><Mail size={17} /> {companyContactEmail}</a>
+        <a href={`tel:${companyContactPhone.replace(/\s/g, "")}`}><Phone size={17} /> {companyContactPhone}</a>
+        <span><MapPin size={17} /> {companyContactLocation}</span>
+      </div>
+    </footer>
+  );
 }
 
 createRoot(document.getElementById("root")).render(<App />);
