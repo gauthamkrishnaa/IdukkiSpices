@@ -258,6 +258,10 @@ function deliveryNotificationType(status) {
   }[status] || "";
 }
 
+function isConfirmedOrder(order) {
+  return order?.paymentStatus && order.paymentStatus !== "Pending";
+}
+
 function pdfText(value) {
   return String(value ?? "")
     .replace(/€/g, "EUR")
@@ -613,6 +617,12 @@ async function confirmPaidOrder(orderId, paymentDetails = {}) {
     frenchInvoiceEmail(updated),
     [{ filename: `facture-${updated.id}.pdf`, content: invoicePdf }]
   );
+  await customerActionNotification({
+    type: "new-order",
+    title: "New paid order received",
+    body: `${updated.customer?.name || "Customer"} paid for order ${updated.id} (€${Number(updated.total || 0).toFixed(2)}).`,
+    order: updated
+  });
   const confirmed = database.updateOrderPaymentStatus(updated.id, "Paid", {
     ...paymentDetails,
     confirmationEmailSent: true,
@@ -745,6 +755,7 @@ async function handleApi(req, res, url) {
     if (!account) return sendJson(res, 404, { error: "Account not found" });
     const accountCreatedAt = Date.parse(account.createdAt || "");
     return sendJson(res, 200, database.getOrders().filter((order) => {
+      if (!isConfirmedOrder(order)) return false;
       if (order.customerId) return order.customerId === account.id;
       const orderCreatedAt = Date.parse(order.createdAt || "");
       return order.customerEmail === account.email
@@ -963,7 +974,7 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/orders") {
     if (req.method === "GET") {
       if (!requireAdmin(req, res)) return;
-      return sendJson(res, 200, database.getOrders());
+      return sendJson(res, 200, database.getOrders().filter(isConfirmedOrder));
     }
     if (req.method === "DELETE") {
       if (!requireAdmin(req, res)) return;
@@ -1001,12 +1012,6 @@ async function handleApi(req, res, url) {
         return sendJson(res, 400, { error: "Minimum order value is €1." });
       }
       const savedOrder = database.saveOrder({ ...incomingOrder, ...charges });
-      await customerActionNotification({
-        type: "new-order",
-        title: "New order received",
-        body: `${savedOrder.customer?.name || "Customer"} placed order ${savedOrder.id} for €${Number(savedOrder.total || 0).toFixed(2)}.`,
-        order: savedOrder
-      });
       try {
         const stripeSession = await createStripeCheckout(savedOrder);
         database.updateOrder(savedOrder.id, { stripeSessionId: stripeSession.id || "" });
