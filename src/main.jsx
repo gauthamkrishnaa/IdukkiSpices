@@ -11,6 +11,7 @@ import {
   LogOut,
   Mail,
   MapPin,
+  Menu,
   Minus,
   Package,
   Phone,
@@ -20,7 +21,8 @@ import {
   ShoppingBag,
   Sparkles,
   Truck,
-  UserRound
+  UserRound,
+  X
 } from "lucide-react";
 import "./modern.css";
 
@@ -651,24 +653,44 @@ function App() {
 }
 
 function Header({ go, page, cartCount, customer, lang, setLang, notifications = [], onOpenNotifications, onClearNotifications }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const links = [["index", "Home"], ["about", "About"], ["shop", "Shop"], ["contact", "Contact"], ["cart", "Cart"], ["auth", customer ? "My account" : "Login"]];
   const pathFor = (id) => id === "index" ? "/" : `/${id}.html`;
   const follow = (event, id) => {
     event.preventDefault();
+    setMenuOpen(false);
     go(id === "auth" && customer ? "account" : id);
   };
+  const navLinks = (className = "", { showLanguage = true, showNotifications = true } = {}) => (
+    <nav className={className}>
+      {links.map(([id, label]) => (
+        <a className={page === id ? "active" : ""} href={pathFor(id === "auth" && customer ? "account" : id)} key={id} onClick={(event) => follow(event, id)}>
+          {label}{id === "cart" && <b>{cartCount}</b>}
+        </a>
+      ))}
+      {customer && showNotifications && (
+        <CustomerNotificationBell
+          notifications={notifications}
+          onOpen={onOpenNotifications}
+          onClear={onClearNotifications}
+        />
+      )}
+      {showLanguage && (
+        <div className="language-toggle" aria-label="Language">
+          <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")} type="button">EN</button>
+          <button className={lang === "fr" ? "active" : ""} onClick={() => setLang("fr")} type="button">FR</button>
+        </div>
+      )}
+    </nav>
+  );
   return (
     <header className="topbar">
       <a className="brand" href="/" onClick={(event) => follow(event, "index")}>
         <img src="/assets/idukki-spices-logo.jpeg" alt="Idukki Spices" />
         <span>Idukki Spices</span>
       </a>
-      <nav>
-        {links.map(([id, label]) => (
-          <a className={page === id ? "active" : ""} href={pathFor(id === "auth" && customer ? "account" : id)} key={id} onClick={(event) => follow(event, id)}>
-            {label}{id === "cart" && <b>{cartCount}</b>}
-          </a>
-        ))}
+      {navLinks("desktop-nav")}
+      <div className="mobile-header-actions">
         {customer && (
           <CustomerNotificationBell
             notifications={notifications}
@@ -676,11 +698,30 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
             onClear={onClearNotifications}
           />
         )}
-        <div className="language-toggle" aria-label="Language">
+        <div className="language-toggle mobile-language" aria-label="Language">
           <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")} type="button">EN</button>
           <button className={lang === "fr" ? "active" : ""} onClick={() => setLang("fr")} type="button">FR</button>
         </div>
-      </nav>
+        <button className="mobile-menu-button" onClick={() => setMenuOpen(true)} type="button" aria-label="Open menu">
+          <Menu size={24} />
+        </button>
+      </div>
+      {menuOpen && (
+        <div className="mobile-sidebar-backdrop" role="presentation" onClick={() => setMenuOpen(false)}>
+          <aside className="mobile-sidebar" role="dialog" aria-modal="true" aria-label="Site menu" onClick={(event) => event.stopPropagation()}>
+            <div className="mobile-sidebar-head">
+              <div className="brand compact-brand">
+                <img src="/assets/idukki-spices-logo.jpeg" alt="" />
+                <span>Idukki Spices</span>
+              </div>
+              <button className="mobile-menu-button close" onClick={() => setMenuOpen(false)} type="button" aria-label="Close menu">
+                <X size={24} />
+              </button>
+            </div>
+            {navLinks("mobile-nav", { showLanguage: false, showNotifications: false })}
+          </aside>
+        </div>
+      )}
     </header>
   );
 }
@@ -1547,7 +1588,13 @@ function Admin({ products, setProducts }) {
   ];
   const paidOrders = orders.filter((order) => order.paymentStatus === "Paid").length;
   const pendingOrders = orders.filter((order) => order.paymentStatus === "Pending").length;
-  const revenue = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+  const refundedOrders = orders.filter((order) => order.paymentStatus === "Refunded").length;
+  const refundedTotal = orders
+    .filter((order) => order.paymentStatus === "Refunded")
+    .reduce((sum, order) => sum + Number(order.total || 0), 0);
+  const revenue = orders
+    .filter((order) => ["Paid", "Refund requested"].includes(order.paymentStatus))
+    .reduce((sum, order) => sum + Number(order.total || 0), 0);
   const deliveryStatuses = ["New order", "Processing", "Packed", "Shipped", "Delivered", "Cancelled"];
   const visibleOrders = orders.filter((order) => (order.deliveryStatus || "New order") === activeOrderStatus);
   const unreadMessages = messages.filter((message) => message.status !== "Replied").length;
@@ -1632,10 +1679,11 @@ function Admin({ products, setProducts }) {
               <Stat icon={<BarChart3 />} label="Orders" value={orders.length} />
               <Stat icon={<UserRound />} label="Customers" value={customers.length} />
               <Stat icon={<Mail />} label="Messages" value={messages.length} />
-              <Stat icon={<CreditCard />} label="Revenue" value={money(revenue)} />
+              <Stat icon={<CreditCard />} label="Net revenue" value={money(revenue)} />
+              <Stat icon={<CreditCard />} label="Refunded" value={money(refundedTotal)} />
             </div>
             <div className="admin-quick-grid">
-              <button onClick={() => setActiveSection("orders")} type="button"><Package size={20} /><strong>Manage orders</strong><span>{pendingOrders} pending · {paidOrders} paid</span></button>
+              <button onClick={() => setActiveSection("orders")} type="button"><Package size={20} /><strong>Manage orders</strong><span>{pendingOrders} pending · {paidOrders} paid · {refundedOrders} refunded</span></button>
               <button onClick={() => setActiveSection("products")} type="button"><ShoppingBag size={20} /><strong>Edit products</strong><span>{products.length} product records</span></button>
               <button onClick={() => setActiveSection("accounts")} type="button"><UserRound size={20} /><strong>Customer accounts</strong><span>{customers.length} saved accounts</span></button>
               <button onClick={() => setActiveSection("messages")} type="button"><Mail size={20} /><strong>Contact messages</strong><span>{unreadMessages} need review</span></button>
