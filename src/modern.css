@@ -1815,6 +1815,18 @@ h3 {
   justify-content: space-between;
 }
 
+.notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.notification-actions .danger-link {
+  border-color: rgba(167, 54, 45, 0.22);
+  color: #8b2d1a;
+}
+
 .notification-bar-head > div span {
   display: inline-flex;
   align-items: center;
@@ -1830,6 +1842,10 @@ h3 {
 .notification-list {
   display: grid;
   gap: 8px;
+  max-height: min(300px, 42svh);
+  overflow-y: auto;
+  padding-right: 6px;
+  overscroll-behavior: contain;
 }
 
 .notification-list article {

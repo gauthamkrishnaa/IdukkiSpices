@@ -383,6 +383,11 @@ function markAdminNotificationsRead() {
   return getAdminNotifications();
 }
 
+function clearAdminNotifications() {
+  run("DELETE FROM admin_notifications;");
+  return [];
+}
+
 function createContactMessage(input = {}) {
   const message = {
     id: input.id || `MSG-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
@@ -553,6 +558,7 @@ module.exports = {
   createAdminNotification,
   getAdminNotifications,
   markAdminNotificationsRead,
+  clearAdminNotifications,
   createContactMessage,
   getContactMessages,
   updateContactMessage,

@@ -684,6 +684,9 @@ async function handleApi(req, res, url) {
     if (req.method === "PUT") {
       return sendJson(res, 200, database.markAdminNotificationsRead());
     }
+    if (req.method === "DELETE") {
+      return sendJson(res, 200, database.clearAdminNotifications());
+    }
   }
 
   if (url.pathname === "/api/contact-messages") {

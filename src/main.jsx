@@ -1670,6 +1670,16 @@ function Admin({ products, setProducts }) {
       setNote(error.message);
     }
   };
+  const clearNotifications = async () => {
+    const ok = window.confirm("Clear all admin notifications?");
+    if (!ok) return;
+    try {
+      setNotifications(await api("/api/admin/notifications", { method: "DELETE" }));
+      setNote("Admin notifications cleared.");
+    } catch (error) {
+      setNote(error.message);
+    }
+  };
   const updateMessageStatus = async (message, status) => {
     try {
       const updated = await api("/api/contact-messages", { method: "PUT", body: JSON.stringify({ id: message.id, status }) });
@@ -1702,7 +1712,7 @@ function Admin({ products, setProducts }) {
         <div className="admin-head">
           <SectionTitle eyebrow="Operations" title={adminTabs.find(([id]) => id === activeSection)?.[1] || "Overview"} />
         </div>
-        {activeSection === "overview" && <AdminNotificationBar notifications={notifications} onMarkRead={markNotificationsRead} />}
+        {activeSection === "overview" && <AdminNotificationBar notifications={notifications} onMarkRead={markNotificationsRead} onClear={clearNotifications} />}
         {note && <p className="notice compact">{note}</p>}
         {activeSection === "overview" && (
           <section className="admin-section-stack">
@@ -1839,9 +1849,8 @@ function AdminContactMessage({ message, onStatus }) {
   );
 }
 
-function AdminNotificationBar({ notifications, onMarkRead }) {
+function AdminNotificationBar({ notifications, onMarkRead, onClear }) {
   const unread = notifications.filter((item) => !Number(item.isRead)).length;
-  const visible = notifications.slice(0, 3);
   return (
     <section className="admin-notification-bar">
       <div className="notification-bar-head">
@@ -1850,11 +1859,14 @@ function AdminNotificationBar({ notifications, onMarkRead }) {
           <strong>Customer updates</strong>
           {unread > 0 && <span>{unread} new</span>}
         </div>
-        <button className="ghost small" disabled={!notifications.length || unread === 0} onClick={onMarkRead} type="button">Mark read</button>
+        <div className="notification-actions">
+          <button className="ghost small" disabled={!notifications.length || unread === 0} onClick={onMarkRead} type="button">Mark read</button>
+          <button className="ghost small danger-link" disabled={!notifications.length} onClick={onClear} type="button">Clear</button>
+        </div>
       </div>
-      {visible.length ? (
+      {notifications.length ? (
         <div className="notification-list">
-          {visible.map((item) => {
+          {notifications.map((item) => {
             const created = item.createdAt ? new Date(item.createdAt).toLocaleString(undefined, {
               day: "2-digit",
               month: "short",
