@@ -1137,7 +1137,8 @@ function serveStatic(req, res, url) {
   if (fs.existsSync(distRoot)) {
     const rootAssetPath = path.normalize(path.join(root, requested));
     const rootAssetExt = path.extname(rootAssetPath);
-    if (!fs.existsSync(filePath) && rootAssetPath.startsWith(root) && fs.existsSync(rootAssetPath) && rootAssetExt && rootAssetExt !== ".html") {
+    const isGoogleVerificationFile = rootAssetExt === ".html" && path.basename(rootAssetPath).startsWith("google");
+    if (!fs.existsSync(filePath) && rootAssetPath.startsWith(root) && fs.existsSync(rootAssetPath) && rootAssetExt && (rootAssetExt !== ".html" || isGoogleVerificationFile)) {
       filePath = rootAssetPath;
     } else if (!fs.existsSync(filePath) || path.extname(filePath) === ".html") {
       filePath = path.join(distRoot, "index.html");
