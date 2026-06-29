@@ -191,6 +191,7 @@ function initDatabase() {
 
   const count = one("SELECT COUNT(*) AS count FROM products;")?.count || 0;
   if (Number(count) === 0) saveProducts(loadSeedProducts());
+  else syncProductImagesFromSeed();
 }
 
 function getProducts() {
@@ -205,6 +206,20 @@ function saveProducts(products) {
     COMMIT;
   `);
   return getProducts();
+}
+
+function syncProductImagesFromSeed() {
+  const products = loadSeedProducts().filter((product) => product.id && product.image);
+  if (!products.length) return;
+  run(`
+    BEGIN;
+    ${products.map((product) => `
+      UPDATE products
+      SET image = ${sqlValue(product.image)}
+      WHERE id = ${sqlValue(product.id)};
+    `).join("\n")}
+    COMMIT;
+  `);
 }
 
 function getOrders() {

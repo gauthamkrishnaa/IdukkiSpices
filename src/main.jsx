@@ -27,9 +27,9 @@ import {
 import "./modern.css";
 
 const money = (value) => `€${Number(value || 0).toFixed(2)}`;
-const MIN_ORDER_VALUE = 1;
+const MIN_ORDER_VALUE = 20;
 const FREE_SHIPPING_THRESHOLD = 50;
-const SHIPPING_FEE = 0;
+const SHIPPING_FEE = 4.99;
 const cartKey = "idukki-react-cart";
 const adminKey = "idukki-admin-session";
 const customerKey = "idukki-customer-session";
@@ -185,7 +185,10 @@ const translations = {
   "Sort": "Tri",
   "Pack": "Emballage",
   "Deliver": "Livraison",
-  "Each stage is handled with care so customers receive clean, aromatic spices ready for the shelf.": "Chaque étape est faite avec soin pour livrer des épices propres, parfumées et prêtes à utiliser.",
+  "Fresh spices are selected from trusted Kerala-inspired sources at the right stage for aroma and quality.": "Les épices fraîches sont sélectionnées auprès de sources fiables inspirées du Kerala au bon moment pour préserver l'arôme et la qualité.",
+  "Every batch is checked, cleaned, and separated so only neat, full-flavoured spices move forward.": "Chaque lot est vérifié, nettoyé et trié pour garder uniquement des épices nettes et pleines de saveur.",
+  "The spices are sealed in clean pouches with clear labels to protect freshness until they reach your kitchen.": "Les épices sont scellées dans des sachets propres avec des étiquettes claires pour protéger leur fraîcheur jusqu'à votre cuisine.",
+  "Orders are prepared carefully and sent with tracking updates so customers know what is happening.": "Les commandes sont préparées avec soin et envoyées avec des mises à jour de suivi pour informer les clients.",
   "Choose spices and update quantity instantly": "Choisissez vos épices et ajustez la quantité",
   "Search cardamom, pepper...": "Rechercher cardamome, poivre...",
   "All categories": "Toutes les catégories",
@@ -205,9 +208,9 @@ const translations = {
   "Shipping": "Livraison",
   "Free": "Gratuite",
   "Total": "Total",
-  "Minimum order value is €1.": "Le minimum de commande est de 1 €.",
-  "Free delivery for all test orders.": "Livraison gratuite pour toutes les commandes de test.",
-  "Add more spices to reach the €1 minimum order.": "Ajoutez plus d'épices pour atteindre le minimum de commande de 1 €.",
+  "Minimum order value is €20.": "Le minimum de commande est de 20 €.",
+  "Shipping is €4.99, free over €50.": "La livraison est de 4,99 €, gratuite dès 50 €.",
+  "Add more spices to reach the €20 minimum order.": "Ajoutez plus d'épices pour atteindre le minimum de commande de 20 €.",
   "You have free delivery on this order.": "La livraison est gratuite pour cette commande.",
   "Checkout": "Paiement",
   "Clear cart": "Vider le panier",
@@ -780,7 +783,7 @@ function Hero({ go }) {
         </div>
       </div>
       <div className="hero-media">
-        <img src="/assets/cardamom-closeup.webp" alt="Green cardamom pods" />
+        <img src="/assets/product-mixed-spices-pack.png" alt="Idukki Spices mixed spice pack" />
         <div className="floating-proof"><ShieldCheck size={20} /> Secure online checkout</div>
       </div>
     </section>
@@ -818,9 +821,9 @@ function HomeDeliveryBanner({ go, lang }) {
         <Truck size={24} />
         <span>{isFrench ? "Livraison" : "Delivery"}</span>
       </div>
-      <strong>{isFrench ? "Minimum de commande 1 €" : "Minimum order €1"}</strong>
+      <strong>{isFrench ? "Minimum de commande 20 €" : "Minimum order €20"}</strong>
       <strong>{isFrench ? "Livraison gratuite dès 50 €" : "Free delivery over €50"}</strong>
-      <p>{isFrench ? "Livraison gratuite temporaire pour le test." : "Temporary free shipping for testing."}</p>
+      <p>{isFrench ? "Livraison 4,99 € sous 50 €." : "€4.99 shipping under €50."}</p>
       <button className="primary small" onClick={() => go("shop")} type="button">
         {isFrench ? "Voir la boutique" : "Shop now"}
       </button>
@@ -829,6 +832,25 @@ function HomeDeliveryBanner({ go, lang }) {
 }
 
 function About() {
+  const steps = [
+    {
+      title: "Harvest",
+      text: "Fresh spices are selected from trusted Kerala-inspired sources at the right stage for aroma and quality."
+    },
+    {
+      title: "Sort",
+      text: "Every batch is checked, cleaned, and separated so only neat, full-flavoured spices move forward."
+    },
+    {
+      title: "Pack",
+      text: "The spices are sealed in clean pouches with clear labels to protect freshness until they reach your kitchen."
+    },
+    {
+      title: "Deliver",
+      text: "Orders are prepared carefully and sent with tracking updates so customers know what is happening."
+    }
+  ];
+
   return (
     <main>
       <section className="split-hero">
@@ -839,12 +861,15 @@ function About() {
         </div>
         <img src="/assets/idukki-plantation-wide.png" alt="Idukki plantation" />
       </section>
+      <section className="section visual-banner">
+        <img src="/assets/spice-story-kitchen.png" alt="Idukki Spices story and kitchen uses" />
+      </section>
       <section className="section story-grid">
-        {["Harvest", "Sort", "Pack", "Deliver"].map((step, index) => (
-          <article key={step}>
+        {steps.map((step, index) => (
+          <article key={step.title}>
             <span>{String(index + 1).padStart(2, "0")}</span>
-            <h3>{step}</h3>
-            <p>Each stage is handled with care so customers receive clean, aromatic spices ready for the shelf.</p>
+            <h3>{step.title}</h3>
+            <p>{step.text}</p>
           </article>
         ))}
       </section>
@@ -1082,7 +1107,7 @@ function Cart({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, addT
           <p><span>Subtotal</span><strong>{money(cartTotal)}</strong></p>
           <p><span>Shipping</span><ShippingPrice subtotal={cartTotal} shippingFee={shippingFee} lang={lang} /></p>
           <p className="total"><span>Total</span><strong>{money(orderTotal)}</strong></p>
-          {!canCheckout && <p className="notice compact">Add more spices to reach the €1 minimum order.</p>}
+          {!canCheckout && <p className="notice compact">Add more spices to reach the €20 minimum order.</p>}
           <button className="primary" disabled={!canCheckout} onClick={() => go("checkout")} type="button"><Lock size={18} /> Checkout</button>
           <button className="ghost full" onClick={() => setCart({})} type="button">Clear cart</button>
         </aside>
@@ -1115,13 +1140,13 @@ function DeliveryNotice({ subtotal, lang }) {
     <div className="delivery-notice">
       <Truck size={20} />
       <div>
-        <strong>{isFrench ? "Livraison gratuite temporaire pour toutes les commandes de test." : "Temporary free delivery for all test orders."}</strong>
+        <strong>{isFrench ? "Livraison 4,99 €, gratuite dès 50 €." : "€4.99 delivery, free over €50."}</strong>
         <p>
           {subtotal >= FREE_SHIPPING_THRESHOLD
             ? (isFrench ? "La livraison est gratuite pour cette commande." : "You have free delivery on this order.")
             : (isFrench
-              ? `Minimum de commande : 1 €.${remaining > 0 ? ` Ajoutez encore ${money(remaining)} pour commander.` : ""}`
-              : `Minimum order value is €1.${remaining > 0 ? ` Add ${money(remaining)} more to checkout.` : ""}`)}
+              ? `Minimum de commande : 20 €.${remaining > 0 ? ` Ajoutez encore ${money(remaining)} pour commander.` : " Livraison : 4,99 €."}`
+              : `Minimum order value is €20.${remaining > 0 ? ` Add ${money(remaining)} more to checkout.` : " Shipping: €4.99."}`)}
         </p>
       </div>
     </div>
@@ -1152,7 +1177,7 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
   const submit = async (event) => {
     event.preventDefault();
     if (!cartItems.length) return setNote("Add products before checkout.");
-    if (!canCheckout) return setNote("Add more spices to reach the €1 minimum order.");
+    if (!canCheckout) return setNote("Add more spices to reach the €20 minimum order.");
     const order = {
       id: `IDK-${Date.now().toString().slice(-6)}`,
       customer: form,
