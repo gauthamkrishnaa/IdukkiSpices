@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /account.html
+Disallow: /auth.html
+Disallow: /checkout.html
+Disallow: /cart.html
+Disallow: /order-detail.html
+Disallow: /payment-success.html
+
+Sitemap: https://idukkispices.onrender.com/sitemap.xml

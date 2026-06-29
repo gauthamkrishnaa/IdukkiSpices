@@ -127,6 +127,148 @@ const pageFromPath = () => {
   return clean.replace(".html", "") || "index";
 };
 
+const siteUrl = "https://idukkispices.onrender.com";
+const seoPages = {
+  index: {
+    title: "Idukki Spices | Kerala Spices Delivered in France",
+    description: "Shop Idukki Spices for Kerala-inspired cardamom, black pepper, cloves, cinnamon, star anise, bay leaves, and mixed spices with secure online checkout.",
+    path: "/",
+    image: "/assets/hero-idukki-to-europe.png"
+  },
+  about: {
+    title: "About Idukki Spices | Kerala Spice Story",
+    description: "Learn how Idukki Spices selects, sorts, packs, and delivers aromatic Kerala-inspired spices for everyday kitchens.",
+    path: "/about.html",
+    image: "/assets/spice-story-kitchen.png"
+  },
+  shop: {
+    title: "Shop Kerala Spices | Idukki Spices",
+    description: "Buy green cardamom, mixed spices, black pepper, cloves, cinnamon, star anise, and bay leaves from Idukki Spices.",
+    path: "/shop.html",
+    image: "/assets/product-mixed-spices-pack.png"
+  },
+  cart: {
+    title: "Cart | Idukki Spices",
+    description: "Review your Idukki Spices cart, shipping charges, and secure checkout total.",
+    path: "/cart.html",
+    image: "/assets/product-mixed-spices-pack.png"
+  },
+  contact: {
+    title: "Contact Idukki Spices | Orders and Support",
+    description: "Contact Idukki Spices for product questions, order help, delivery support, and business enquiries.",
+    path: "/contact.html",
+    image: "/assets/idukki-spices-logo.jpeg"
+  },
+  auth: {
+    title: "Login | Idukki Spices",
+    description: "Login or create an Idukki Spices account to save details and track your orders.",
+    path: "/auth.html",
+    image: "/assets/idukki-spices-logo.jpeg"
+  },
+  account: {
+    title: "My Account | Idukki Spices",
+    description: "View your Idukki Spices orders, account details, notifications, and delivery information.",
+    path: "/account.html",
+    image: "/assets/idukki-spices-logo.jpeg"
+  },
+  checkout: {
+    title: "Secure Checkout | Idukki Spices",
+    description: "Complete your Idukki Spices order with secure online payment.",
+    path: "/checkout.html",
+    image: "/assets/product-mixed-spices-pack.png"
+  },
+  "payment-success": {
+    title: "Payment Successful | Idukki Spices",
+    description: "Your Idukki Spices payment has been completed successfully.",
+    path: "/payment-success.html",
+    image: "/assets/idukki-spices-logo.jpeg"
+  }
+};
+const indexablePages = new Set(["index", "about", "shop", "contact"]);
+
+const setMetaTag = (selector, attributes) => {
+  let tag = document.head.querySelector(selector);
+  if (!tag) {
+    tag = document.createElement("meta");
+    document.head.appendChild(tag);
+  }
+  Object.entries(attributes).forEach(([key, value]) => tag.setAttribute(key, value));
+};
+
+const setLinkTag = (rel, href) => {
+  let tag = document.head.querySelector(`link[rel="${rel}"]`);
+  if (!tag) {
+    tag = document.createElement("link");
+    tag.setAttribute("rel", rel);
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute("href", href);
+};
+
+const updateSeo = (page, products) => {
+  const seo = seoPages[page] || seoPages.index;
+  const canonical = new URL(seo.path, siteUrl).href;
+  const image = new URL(seo.image, siteUrl).href;
+  document.title = seo.title;
+  setMetaTag('meta[name="description"]', { name: "description", content: seo.description });
+  setMetaTag('meta[name="robots"]', { name: "robots", content: indexablePages.has(page) ? "index,follow" : "noindex,nofollow" });
+  setMetaTag('meta[property="og:type"]', { property: "og:type", content: page === "shop" ? "website" : "website" });
+  setMetaTag('meta[property="og:title"]', { property: "og:title", content: seo.title });
+  setMetaTag('meta[property="og:description"]', { property: "og:description", content: seo.description });
+  setMetaTag('meta[property="og:url"]', { property: "og:url", content: canonical });
+  setMetaTag('meta[property="og:image"]', { property: "og:image", content: image });
+  setMetaTag('meta[name="twitter:card"]', { name: "twitter:card", content: "summary_large_image" });
+  setMetaTag('meta[name="twitter:title"]', { name: "twitter:title", content: seo.title });
+  setMetaTag('meta[name="twitter:description"]', { name: "twitter:description", content: seo.description });
+  setMetaTag('meta[name="twitter:image"]', { name: "twitter:image", content: image });
+  setLinkTag("canonical", canonical);
+
+  document.querySelectorAll('script[data-seo-schema="true"]').forEach((tag) => tag.remove());
+  const graph = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Idukki Spices",
+    url: siteUrl,
+    logo: new URL("/assets/idukki-spices-logo.jpeg", siteUrl).href,
+    email: companyContactEmail,
+    telephone: companyContactPhone,
+    sameAs: [companyInstagramUrl]
+  };
+  const scripts = [graph];
+  if (page === "shop" && products.length) {
+    scripts.push({
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: "Idukki Spices products",
+      itemListElement: products.map((product, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "Product",
+          name: product.name,
+          description: product.description,
+          image: new URL(`/${product.image}`, siteUrl).href,
+          brand: { "@type": "Brand", name: "Idukki Spices" },
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "EUR",
+            price: Number(product.price || 0).toFixed(2),
+            availability: Number(product.stock || 0) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            url: new URL("/shop.html", siteUrl).href
+          }
+        }
+      }))
+    });
+  }
+  scripts.forEach((schema) => {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.dataset.seoSchema = "true";
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+  });
+};
+
 const readJsonStorage = (storage, key, fallback) => {
   try {
     return JSON.parse(storage.getItem(key) || "null") || fallback;
@@ -449,6 +591,10 @@ function App() {
     localStorage.setItem("idukki-language", lang);
     translateInterface(page === "admin" ? "en" : lang);
   }, [lang, page, products, cart, customer]);
+
+  useEffect(() => {
+    updateSeo(page, products);
+  }, [page, products]);
 
   useEffect(() => {
     localStorage.setItem(themeKey, theme);
