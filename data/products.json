@@ -1,27 +1,27 @@
 [
   {
     "id": "green-cardamom-50",
-    "name": "Green Cardamom 50g",
+    "name": "Green Cardamom 7mm 50g",
     "price": 9,
     "icon": "C",
     "art": "cardamom",
     "category": "whole",
     "stock": 28,
     "image": "assets/product-green-cardamom-pack.png",
-    "uses": "Best for tea, sweets, biryani, and festive rice.",
-    "description": "Fragrant Idukki green cardamom pods for tea, desserts, biryani, and slow-cooked curries."
+    "uses": "Special graded 7mm pods, best for tea, sweets, biryani, and festive rice.",
+    "description": "Special graded 7mm Idukki green cardamom pods with a bright aroma for tea, desserts, biryani, and slow-cooked curries."
   },
   {
     "id": "green-cardamom-100",
-    "name": "Green Cardamom 100g",
+    "name": "Green Cardamom 7mm 100g",
     "price": 7,
     "icon": "C",
     "art": "cardamom",
     "category": "whole",
     "stock": 24,
     "image": "assets/product-green-cardamom-pack.png",
-    "uses": "Best for regular tea drinkers and family cooking.",
-    "description": "A larger pack of bright, aromatic cardamom pods with deep natural sweetness."
+    "uses": "Special graded 7mm pods, best for regular tea drinkers and family cooking.",
+    "description": "A larger pack of special graded 7mm green cardamom pods with bright aroma and deep natural sweetness."
   },
   {
     "id": "mixed-spices-100",

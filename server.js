@@ -71,8 +71,8 @@ function calculateOrderCharges(items = []) {
 }
 
 const frenchProductNames = {
-  "green-cardamom-50": "Cardamome verte 50g",
-  "green-cardamom-100": "Cardamome verte 100g",
+  "green-cardamom-50": "Cardamome verte 7mm 50g",
+  "green-cardamom-100": "Cardamome verte 7mm 100g",
   "mixed-spices-100": "Mélange d'épices 100g",
   "black-pepper": "Poivre noir",
   cloves: "Clous de girofle",

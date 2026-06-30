@@ -191,7 +191,7 @@ function initDatabase() {
 
   const count = one("SELECT COUNT(*) AS count FROM products;")?.count || 0;
   if (Number(count) === 0) saveProducts(loadSeedProducts());
-  else syncProductImagesFromSeed();
+  else syncProductMarketingFromSeed();
 }
 
 function getProducts() {
@@ -208,14 +208,18 @@ function saveProducts(products) {
   return getProducts();
 }
 
-function syncProductImagesFromSeed() {
+function syncProductMarketingFromSeed() {
   const products = loadSeedProducts().filter((product) => product.id && product.image);
   if (!products.length) return;
   run(`
     BEGIN;
     ${products.map((product) => `
       UPDATE products
-      SET image = ${sqlValue(product.image)}
+      SET name = ${sqlValue(product.name)},
+          image = ${sqlValue(product.image)},
+          category = ${sqlValue(product.category)},
+          uses = ${sqlValue(product.uses)},
+          description = ${sqlValue(product.description)}
       WHERE id = ${sqlValue(product.id)};
     `).join("\n")}
     COMMIT;
@@ -440,8 +444,8 @@ function updateContactMessage(id, changes = {}) {
 }
 
 const frenchProductNames = {
-  "green-cardamom-50": "Cardamome verte 50g",
-  "green-cardamom-100": "Cardamome verte 100g",
+  "green-cardamom-50": "Cardamome verte 7mm 50g",
+  "green-cardamom-100": "Cardamome verte 7mm 100g",
   "mixed-spices-100": "Mélange d'épices 100g",
   "black-pepper": "Poivre noir",
   cloves: "Clous de girofle",

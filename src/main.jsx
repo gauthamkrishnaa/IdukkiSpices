@@ -131,7 +131,7 @@ const siteUrl = "https://idukkispices.onrender.com";
 const seoPages = {
   index: {
     title: "Idukki Spices | Kerala Spices Delivered in France",
-    description: "Shop Idukki Spices for Kerala-inspired cardamom, black pepper, cloves, cinnamon, star anise, bay leaves, and mixed spices with secure online checkout.",
+    description: "Shop Idukki Spices for Kerala-inspired special graded 7mm cardamom, black pepper, cloves, cinnamon, star anise, bay leaves, and mixed spices with secure online checkout.",
     path: "/",
     image: "/assets/hero-idukki-to-europe.png"
   },
@@ -143,7 +143,7 @@ const seoPages = {
   },
   shop: {
     title: "Shop Kerala Spices | Idukki Spices",
-    description: "Buy green cardamom, mixed spices, black pepper, cloves, cinnamon, star anise, and bay leaves from Idukki Spices.",
+    description: "Buy special graded 7mm green cardamom, mixed spices, black pepper, cloves, cinnamon, star anise, and bay leaves from Idukki Spices.",
     path: "/shop.html",
     image: "/assets/product-mixed-spices-pack.png"
   },
@@ -311,7 +311,7 @@ const translations = {
   "My account": "Mon compte",
   "Kerala aroma, packed with care": "Arôme du Kerala, emballé avec soin",
   "Idukki Spices for real kitchens": "Idukki Spices pour les vraies cuisines",
-  "Premium cardamom, pepper, warm whole spices, and ready-to-cook mixed packs with a simple secure checkout.": "Cardamome, poivre, épices entières et mélanges prêts à cuisiner avec un paiement sécurisé simple.",
+  "Premium 7mm graded cardamom, pepper, warm whole spices, and ready-to-cook mixed packs with a simple secure checkout.": "Cardamome 7mm premium, poivre, épices entières et mélanges prêts à cuisiner avec un paiement sécurisé simple.",
   "Shop spices": "Acheter des épices",
   "Our plantation story": "Notre histoire",
   "Secure online checkout": "Paiement en ligne sécurisé",
@@ -436,16 +436,16 @@ const translations = {
 const productTranslations = {
   fr: {
     "green-cardamom-50": {
-      name: "Cardamome verte 50g",
+      name: "Cardamome verte 7mm 50g",
       category: "entier",
-      description: "Gousses de cardamome verte parfumées d'Idukki pour le thé, les desserts, le biryani et les currys mijotés.",
-      uses: "Idéal pour le thé, les douceurs, le biryani et le riz de fête."
+      description: "Gousses de cardamome verte d'Idukki, calibre spécial 7mm, très parfumées pour le thé, les desserts, le biryani et les currys mijotés.",
+      uses: "Calibre spécial 7mm, idéal pour le thé, les douceurs, le biryani et le riz de fête."
     },
     "green-cardamom-100": {
-      name: "Cardamome verte 100g",
+      name: "Cardamome verte 7mm 100g",
       category: "entier",
-      description: "Un grand sachet de gousses de cardamome lumineuses et aromatiques, avec une douceur naturelle profonde.",
-      uses: "Idéal pour les amateurs de thé régulier et la cuisine familiale."
+      description: "Un grand sachet de gousses de cardamome verte calibre spécial 7mm, aromatiques et naturellement douces.",
+      uses: "Calibre spécial 7mm, idéal pour les amateurs de thé régulier et la cuisine familiale."
     },
     "mixed-spices-100": {
       name: "Mélange d'épices 100g",
@@ -489,6 +489,8 @@ const productTranslations = {
 const productFallbackIds = {
   "Green Cardamom 50g": "green-cardamom-50",
   "Green Cardamom 100g": "green-cardamom-100",
+  "Green Cardamom 7mm 50g": "green-cardamom-50",
+  "Green Cardamom 7mm 100g": "green-cardamom-100",
   "Mixed Spices 100g": "mixed-spices-100",
   "Black Pepper": "black-pepper",
   "Cloves": "cloves",
@@ -922,7 +924,7 @@ function Hero({ go }) {
       <div className="hero-copy">
         <p className="kicker">Kerala aroma, packed with care</p>
         <h1>Idukki Spices for real kitchens</h1>
-        <p>Premium cardamom, pepper, warm whole spices, and ready-to-cook mixed packs with a simple secure checkout.</p>
+        <p>Premium 7mm graded cardamom, pepper, warm whole spices, and ready-to-cook mixed packs with a simple secure checkout.</p>
         <div className="hero-actions">
           <button className="primary" onClick={() => go("shop")} type="button"><ShoppingBag size={18} /> Shop spices</button>
           <button className="ghost" onClick={() => go("about")} type="button">Our plantation story <ChevronRight size={18} /></button>
