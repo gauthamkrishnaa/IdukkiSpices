@@ -127,7 +127,7 @@ const pageFromPath = () => {
   return clean.replace(".html", "") || "index";
 };
 
-const siteUrl = "https://idukkispices.onrender.com";
+const siteUrl = "https://idukkispices.com";
 const seoPages = {
   index: {
     title: "Idukki Spices | Kerala Spices Delivered in France",
@@ -331,6 +331,13 @@ const translations = {
   "Every batch is checked, cleaned, and separated so only neat, full-flavoured spices move forward.": "Chaque lot est vérifié, nettoyé et trié pour garder uniquement des épices nettes et pleines de saveur.",
   "The spices are sealed in clean pouches with clear labels to protect freshness until they reach your kitchen.": "Les épices sont scellées dans des sachets propres avec des étiquettes claires pour protéger leur fraîcheur jusqu'à votre cuisine.",
   "Orders are prepared carefully and sent with tracking updates so customers know what is happening.": "Les commandes sont préparées avec soin et envoyées avec des mises à jour de suivi pour informer les clients.",
+  "From the plantation": "Depuis la plantation",
+  "Cardamom before it becomes a spice pack.": "La cardamome avant de devenir un sachet d'épices.",
+  "Real cardamom plants, flowers, and young pods from the growing stage before drying and grading.": "De vrais plants de cardamome, fleurs et jeunes capsules pendant la croissance, avant le séchage et le calibrage.",
+  "Cardamom flower and young pods": "Fleur de cardamome et jeunes capsules",
+  "Stone path through the plantation": "Chemin de pierre dans la plantation",
+  "Cardamom growing along stone walls": "Cardamome cultivée le long des murs de pierre",
+  "Fresh blossom after rain": "Fleur fraîche après la pluie",
   "Choose spices and update quantity instantly": "Choisissez vos épices et ajustez la quantité",
   "Search cardamom, pepper...": "Rechercher cardamome, poivre...",
   "All categories": "Toutes les catégories",
@@ -998,6 +1005,28 @@ function About() {
       text: "Orders are prepared carefully and sent with tracking updates so customers know what is happening."
     }
   ];
+  const plantationPhotos = [
+    {
+      src: "/assets/plantation-cardamom-flower-pods.jpeg",
+      alt: "Cardamom flowers and young green pods on the plant",
+      title: "Cardamom flower and young pods"
+    },
+    {
+      src: "/assets/plantation-cardamom-path.jpeg",
+      alt: "Stone path through a green cardamom plantation",
+      title: "Stone path through the plantation"
+    },
+    {
+      src: "/assets/plantation-cardamom-stone-wall.jpeg",
+      alt: "Cardamom plants growing along a stone wall",
+      title: "Cardamom growing along stone walls"
+    },
+    {
+      src: "/assets/plantation-cardamom-blossom-close.jpeg",
+      alt: "Close view of cardamom blossoms and fresh pods after rain",
+      title: "Fresh blossom after rain"
+    }
+  ];
 
   return (
     <main>
@@ -1011,6 +1040,21 @@ function About() {
       </section>
       <section className="section visual-banner">
         <img src="/assets/spice-story-kitchen.png" alt="Idukki Spices story and kitchen uses" />
+      </section>
+      <section className="section plantation-gallery-section">
+        <div className="section-title">
+          <p className="kicker">From the plantation</p>
+          <h2>Cardamom before it becomes a spice pack.</h2>
+          <p>Real cardamom plants, flowers, and young pods from the growing stage before drying and grading.</p>
+        </div>
+        <div className="plantation-gallery" aria-label="Idukki Spices plantation photo gallery">
+          {plantationPhotos.map((photo) => (
+            <figure key={photo.src}>
+              <img src={photo.src} alt={photo.alt} loading="lazy" />
+              <figcaption>{photo.title}</figcaption>
+            </figure>
+          ))}
+        </div>
       </section>
       <section className="section story-grid">
         {steps.map((step, index) => (
