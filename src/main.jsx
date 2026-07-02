@@ -1038,9 +1038,6 @@ function About() {
         </div>
         <img src="/assets/idukki-plantation-wide.png" alt="Idukki plantation" />
       </section>
-      <section className="section visual-banner">
-        <img src="/assets/spice-story-kitchen.png" alt="Idukki Spices story and kitchen uses" />
-      </section>
       <section className="section plantation-gallery-section">
         <div className="section-title">
           <p className="kicker">From the plantation</p>
@@ -1055,6 +1052,9 @@ function About() {
             </figure>
           ))}
         </div>
+      </section>
+      <section className="section visual-banner">
+        <img src="/assets/spice-story-kitchen.png" alt="Idukki Spices story and kitchen uses" />
       </section>
       <section className="section story-grid">
         {steps.map((step, index) => (
