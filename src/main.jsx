@@ -25,6 +25,10 @@ import {
   X
 } from "lucide-react";
 import "./modern.css";
+import plantationFlowerPods from "../assets/plantation-cardamom-flower-pods.jpeg";
+import plantationPath from "../assets/plantation-cardamom-path.jpeg";
+import plantationStoneWall from "../assets/plantation-cardamom-stone-wall.jpeg";
+import plantationBlossomClose from "../assets/plantation-cardamom-blossom-close.jpeg";
 
 const money = (value) => `€${Number(value || 0).toFixed(2)}`;
 const MIN_ORDER_VALUE = 20;
@@ -1007,22 +1011,22 @@ function About() {
   ];
   const plantationPhotos = [
     {
-      src: "/assets/plantation-cardamom-flower-pods.jpeg",
+      src: plantationFlowerPods,
       alt: "Cardamom flowers and young green pods on the plant",
       title: "Cardamom flower and young pods"
     },
     {
-      src: "/assets/plantation-cardamom-path.jpeg",
+      src: plantationPath,
       alt: "Stone path through a green cardamom plantation",
       title: "Stone path through the plantation"
     },
     {
-      src: "/assets/plantation-cardamom-stone-wall.jpeg",
+      src: plantationStoneWall,
       alt: "Cardamom plants growing along a stone wall",
       title: "Cardamom growing along stone walls"
     },
     {
-      src: "/assets/plantation-cardamom-blossom-close.jpeg",
+      src: plantationBlossomClose,
       alt: "Close view of cardamom blossoms and fresh pods after rain",
       title: "Fresh blossom after rain"
     }
