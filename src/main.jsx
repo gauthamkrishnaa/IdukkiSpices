@@ -104,7 +104,7 @@ const api = async (path, options = {}) => {
   const method = String(options.method || "GET").toUpperCase();
   const needsAdminToken = (
     path.startsWith("/api/admin") ||
-    (path.startsWith("/api/contact-messages") && method !== "POST") ||
+    (path.startsWith("/api/contact-messages") && !(path === "/api/contact-messages" && method === "POST")) ||
     path.startsWith("/api/customers") ||
     path.startsWith("/api/email-outbox") ||
     path.startsWith("/api/invoice") ||
@@ -324,6 +324,33 @@ const translations = {
   "Sourced from Idukki inspired farms": "Inspiré des plantations d'Idukki",
   "Stripe secure payment": "Paiement sécurisé Stripe",
   "Order tracking status": "Suivi de commande",
+  "Bestsellers": "Meilleures ventes",
+  "Customer favourites for daily cooking": "Les favoris des clients pour la cuisine quotidienne",
+  "Shop by type": "Acheter par type",
+  "Find the right spice pack faster": "Trouvez plus vite le bon sachet d'épices",
+  "7mm Green Cardamom": "Cardamome verte 7mm",
+  "Premium graded pods in 50g and 100g packs for tea, desserts, biryani, and slow curries.": "Gousses premium calibrées en sachets de 50g et 100g pour le thé, les desserts, le biryani et les currys mijotés.",
+  "Whole Spices": "Épices entières",
+  "Black pepper, cloves, cinnamon, star anise, and bay leaves for everyday cooking.": "Poivre noir, clous de girofle, cannelle, anis étoilé et feuilles de laurier pour la cuisine quotidienne.",
+  "Mixed Spice Pack": "Sachet d'épices mélangées",
+  "A ready collection for soups, rice dishes, marinades, roasts, and festive meals.": "Une sélection prête pour les soupes, plats de riz, marinades, rôtis et repas de fête.",
+  "Family & Bulk Orders": "Commandes familiales et en volume",
+  "Simple ordering for larger kitchens, family events, and regular spice buyers.": "Commande simple pour grandes cuisines, événements familiaux et acheteurs réguliers.",
+  "Shop now": "Acheter maintenant",
+  "Special graded 7mm cardamom": "Cardamome spéciale calibrée 7mm",
+  "Secure online payment": "Paiement en ligne sécurisé",
+  "France delivery updates": "Suivi de livraison en France",
+  "Why customers trust us": "Pourquoi les clients nous font confiance",
+  "Real spice shopping, not just a brochure.": "Une vraie boutique d'épices, pas seulement une brochure.",
+  "Idukki Spices is built for customers to browse, add quantities, pay securely, and follow the order from confirmation to delivery.": "Idukki Spices permet aux clients de parcourir les produits, choisir les quantités, payer en sécurité et suivre la commande de la confirmation à la livraison.",
+  "Clean retail packs": "Sachets propres prêts à vendre",
+  "Clear labels, sealed pouches, and product photos customers can understand before buying.": "Étiquettes claires, sachets scellés et photos produit faciles à comprendre avant l'achat.",
+  "Payment after checkout": "Paiement après le checkout",
+  "Orders are confirmed only after successful payment, so the admin list stays cleaner.": "Les commandes sont confirmées uniquement après paiement réussi, pour garder la liste admin plus propre.",
+  "Order notifications": "Notifications de commande",
+  "Customers and admin receive updates for confirmation, shipping, cancellation, and refund steps.": "Les clients et l'admin reçoivent des mises à jour pour la confirmation, l'expédition, l'annulation et le remboursement.",
+  "Need help choosing?": "Besoin d'aide pour choisir ?",
+  "Message us for product questions, bulk orders, or delivery support.": "Écrivez-nous pour les questions produits, les commandes en volume ou l'aide à la livraison.",
   "About Idukki Spices": "À propos d'Idukki Spices",
   "Built around freshness, aroma, and honest packing.": "Pensé pour la fraîcheur, l'arôme et un emballage sérieux.",
   "We bring classic Kerala spices into clean retail packs for everyday cooking, gifting, and family kitchens.": "Nous proposons les épices classiques du Kerala dans des packs propres pour la cuisine quotidienne, les cadeaux et les familles.",
@@ -342,6 +369,39 @@ const translations = {
   "Stone path through the plantation": "Chemin de pierre dans la plantation",
   "Cardamom growing along stone walls": "Cardamome cultivée le long des murs de pierre",
   "Fresh blossom after rain": "Fleur fraîche après la pluie",
+  "From plant to pack": "De la plante au sachet",
+  "See how cardamom becomes a ready-to-ship spice.": "Découvrez comment la cardamome devient une épice prête à expédier.",
+  "Young pods, careful sorting, and sealed pouches keep the aroma protected from the plantation stage to your kitchen.": "Jeunes capsules, tri soigné et sachets scellés protègent l'arôme de la plantation jusqu'à votre cuisine.",
+  "Flowering stage": "Floraison",
+  "Cardamom flowers and young green pods growing close to the soil.": "Fleurs de cardamome et jeunes capsules vertes qui poussent près du sol.",
+  "The pods are still fresh on the plant before drying and grading.": "Les capsules sont encore fraîches sur le plant avant le séchage et le calibrage.",
+  "Plantation growth": "Croissance en plantation",
+  "Real cardamom plants growing along the stone walls in a shaded plantation.": "De vrais plants de cardamome poussent le long des murs de pierre dans une plantation ombragée.",
+  "Packed for freshness": "Emballé pour la fraîcheur",
+  "Special graded 7mm cardamom is sealed in clean retail pouches.": "La cardamome spéciale calibrée 7mm est scellée dans des sachets propres prêts à vendre.",
+  "Grow": "Culture",
+  "Shade-grown plants form flowers and young pods in the cool plantation climate.": "Les plants cultivés à l'ombre forment fleurs et jeunes capsules dans le climat frais de la plantation.",
+  "Select": "Sélection",
+  "Pods are checked for colour, aroma, and special 7mm grading before packing.": "Les capsules sont vérifiées pour la couleur, l'arôme et le calibrage spécial 7mm avant l'emballage.",
+  "Seal": "Scellage",
+  "Clean pouches protect the natural aroma until the spices reach your kitchen.": "Les sachets propres protègent l'arôme naturel jusqu'à votre cuisine.",
+  "Young pods": "Jeunes capsules",
+  "7mm grading": "Calibrage 7mm",
+  "Sealed packs": "Sachets scellés",
+  "Spice journey": "Parcours des épices",
+  "Watch the pack come alive as you scroll.": "Voyez le sachet prendre vie pendant le défilement.",
+  "From green pods to sealed spice packs, each stage keeps the aroma protected for your kitchen.": "Des jeunes capsules vertes aux sachets scellés, chaque étape protège l'arôme pour votre cuisine.",
+  "Plantation": "Plantation",
+  "Young pods and blossoms on the cardamom plant.": "Jeunes capsules et fleurs sur le plant de cardamome.",
+  "Grading": "Calibrage",
+  "Special 7mm cardamom is sorted for size and aroma.": "La cardamome spéciale 7mm est triée pour sa taille et son arôme.",
+  "Packing": "Emballage",
+  "Clean pouches seal freshness before dispatch.": "Les sachets propres gardent la fraîcheur avant l'envoi.",
+  "France orders move with tracking updates.": "Les commandes en France avancent avec des mises à jour de suivi.",
+  "See the full story": "Voir toute l'histoire",
+  "7mm graded pods": "Gousses calibrées 7mm",
+  "Freshly packed": "Fraîchement emballé",
+  "France delivery": "Livraison en France",
   "Choose spices and update quantity instantly": "Choisissez vos épices et ajustez la quantité",
   "Search cardamom, pepper...": "Rechercher cardamome, poivre...",
   "All categories": "Toutes les catégories",
@@ -583,6 +643,29 @@ function useAddressSuggestions(value) {
   return { suggestions, setSuggestions, loading };
 }
 
+function useScrollReveal(scopeKey) {
+  useEffect(() => {
+    const elements = Array.from(document.querySelectorAll("[data-reveal]"));
+    if (!elements.length) return undefined;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    if (reduced || !("IntersectionObserver" in window)) {
+      elements.forEach((element) => element.classList.add("is-visible"));
+      return undefined;
+    }
+    elements.forEach((element) => element.classList.remove("is-visible"));
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.16, rootMargin: "0px 0px -10% 0px" });
+    requestAnimationFrame(() => elements.forEach((element) => observer.observe(element)));
+    return () => observer.disconnect();
+  }, [scopeKey]);
+}
+
 function App() {
   const [page, setPage] = useState(pageFromPath());
   const [products, setProducts] = useState([]);
@@ -595,6 +678,8 @@ function App() {
   const [pageBusy, setPageBusy] = useState(false);
   const [customerNotifications, setCustomerNotifications] = useState([]);
   const [cartToast, setCartToast] = useState(null);
+
+  useScrollReveal(`${page}-${products.length}-${lang}`);
 
   useEffect(() => {
     api("/api/products").then(setProducts).catch(() => setProducts([]));
@@ -931,7 +1016,7 @@ function CustomerNotificationBell({ notifications, onOpen, onClear }) {
 
 function Hero({ go }) {
   return (
-    <section className="hero">
+    <section className="hero" data-reveal>
       <div className="hero-copy">
         <p className="kicker">Kerala aroma, packed with care</p>
         <h1>Idukki Spices for real kitchens</h1>
@@ -956,26 +1041,162 @@ function Home(props) {
     <main>
       <Hero go={props.go} />
       <HomeDeliveryBanner go={props.go} lang={props.lang} />
-      <section className="section">
-        <SectionTitle eyebrow="Featured" title="Fresh packs customers can buy quickly" />
+      <SpiceJourney go={props.go} />
+      <ShopByCategory go={props.go} />
+      <section className="section" data-reveal>
+        <SectionTitle eyebrow="Bestsellers" title="Customer favourites for daily cooking" />
         <div className="product-grid">
           {featured.map((product) => <ProductCard key={product.id} product={product} onView={setQuickView} {...props} />)}
         </div>
       </section>
-      <section className="trust-band">
-        <div><Leaf /> Sourced from Idukki inspired farms</div>
-        <div><CreditCard /> Stripe secure payment</div>
-        <div><Truck /> Order tracking status</div>
+      <HomeProofSection />
+      <section className="trust-band" data-reveal>
+        <div><Leaf /> Special graded 7mm cardamom</div>
+        <div><CreditCard /> Secure online payment</div>
+        <div><Truck /> France delivery updates</div>
       </section>
+      <HomeContactCta go={props.go} />
       {quickView && <QuickView product={quickView} cart={props.cart} addToCart={props.addToCart} onClose={() => setQuickView(null)} lang={props.lang} />}
     </main>
+  );
+}
+
+function SpiceJourney({ go }) {
+  const steps = [
+    { label: "Plantation", detail: "Young pods and blossoms on the cardamom plant." },
+    { label: "Grading", detail: "Special 7mm cardamom is sorted for size and aroma." },
+    { label: "Packing", detail: "Clean pouches seal freshness before dispatch." },
+    { label: "Deliver", detail: "France orders move with tracking updates." }
+  ];
+  const cinemaImages = [
+    { src: plantationFlowerPods, alt: "Cardamom flowers and young pods on the plant" },
+    { src: "/assets/product-green-cardamom-pack.png", alt: "Idukki Spices green cardamom pack" },
+    { src: "/assets/product-mixed-spices-pack.png", alt: "Idukki Spices mixed spice pack" },
+    { src: plantationPath, alt: "Cardamom plantation path" }
+  ];
+  const loopImages = [...cinemaImages, ...cinemaImages];
+
+  return (
+    <section className="section spice-cinema" data-reveal>
+      <div className="cinema-copy">
+        <p className="kicker">Spice journey</p>
+        <h2>Watch the pack come alive as you scroll.</h2>
+        <p>From green pods to sealed spice packs, each stage keeps the aroma protected for your kitchen.</p>
+        <div className="journey-steps">
+          {steps.map((step, index) => (
+            <article key={step.label} style={{ "--delay": `${index * 120}ms` }}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <strong>{step.label}</strong>
+              <p>{step.detail}</p>
+            </article>
+          ))}
+        </div>
+        <button className="ghost" type="button" onClick={() => go("about")}>See the full story <ChevronRight size={18} /></button>
+      </div>
+      <div className="cinema-stage" aria-label="Animated cardamom and spice pack story">
+        <div className="cinema-track">
+          {loopImages.map((image, index) => (
+            <img
+              src={image.src}
+              alt={index < cinemaImages.length ? image.alt : ""}
+              aria-hidden={index >= cinemaImages.length ? "true" : undefined}
+              key={`${image.src}-${index}`}
+            />
+          ))}
+        </div>
+        <div className="cinema-card cinema-card-one"><Leaf size={18} />7mm graded pods</div>
+        <div className="cinema-card cinema-card-two"><Package size={18} />Freshly packed</div>
+        <div className="cinema-card cinema-card-three"><Truck size={18} />France delivery</div>
+        <div className="cinema-progress"><span /><span /><span /></div>
+      </div>
+    </section>
+  );
+}
+
+function ShopByCategory({ go }) {
+  const categories = [
+    {
+      icon: <Leaf size={22} />,
+      title: "7mm Green Cardamom",
+      text: "Premium graded pods in 50g and 100g packs for tea, desserts, biryani, and slow curries."
+    },
+    {
+      icon: <Sparkles size={22} />,
+      title: "Whole Spices",
+      text: "Black pepper, cloves, cinnamon, star anise, and bay leaves for everyday cooking."
+    },
+    {
+      icon: <Package size={22} />,
+      title: "Mixed Spice Pack",
+      text: "A ready collection for soups, rice dishes, marinades, roasts, and festive meals."
+    },
+    {
+      icon: <ShoppingBag size={22} />,
+      title: "Family & Bulk Orders",
+      text: "Simple ordering for larger kitchens, family events, and regular spice buyers."
+    }
+  ];
+
+  return (
+    <section className="section category-section" data-reveal>
+      <SectionTitle eyebrow="Shop by type" title="Find the right spice pack faster" />
+      <div className="category-grid">
+        {categories.map((category) => (
+          <button className="category-card" key={category.title} onClick={() => go("shop")} type="button">
+            <span>{category.icon}</span>
+            <strong>{category.title}</strong>
+            <p>{category.text}</p>
+            <em>Shop now <ChevronRight size={16} /></em>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HomeProofSection() {
+  const proof = [
+    { icon: <ShieldCheck size={22} />, title: "Clean retail packs", text: "Clear labels, sealed pouches, and product photos customers can understand before buying." },
+    { icon: <Lock size={22} />, title: "Payment after checkout", text: "Orders are confirmed only after successful payment, so the admin list stays cleaner." },
+    { icon: <Bell size={22} />, title: "Order notifications", text: "Customers and admin receive updates for confirmation, shipping, cancellation, and refund steps." }
+  ];
+
+  return (
+    <section className="section home-proof" data-reveal>
+      <div className="home-proof-copy">
+        <p className="kicker">Why customers trust us</p>
+        <h2>Real spice shopping, not just a brochure.</h2>
+        <p>Idukki Spices is built for customers to browse, add quantities, pay securely, and follow the order from confirmation to delivery.</p>
+      </div>
+      <div className="home-proof-grid">
+        {proof.map((item) => (
+          <article key={item.title}>
+            <span>{item.icon}</span>
+            <strong>{item.title}</strong>
+            <p>{item.text}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HomeContactCta({ go }) {
+  return (
+    <section className="home-contact-cta" data-reveal>
+      <div>
+        <p className="kicker">Need help choosing?</p>
+        <h2>Message us for product questions, bulk orders, or delivery support.</h2>
+      </div>
+      <button className="primary" onClick={() => go("contact")} type="button"><Mail size={18} /> Contact Idukki Spices</button>
+    </section>
   );
 }
 
 function HomeDeliveryBanner({ go, lang }) {
   const isFrench = lang === "fr";
   return (
-    <section className="home-delivery-banner">
+    <section className="home-delivery-banner" data-reveal>
       <div>
         <Truck size={24} />
         <span>{isFrench ? "Livraison" : "Delivery"}</span>
@@ -986,6 +1207,86 @@ function HomeDeliveryBanner({ go, lang }) {
       <button className="primary small" onClick={() => go("shop")} type="button">
         {isFrench ? "Voir la boutique" : "Shop now"}
       </button>
+    </section>
+  );
+}
+
+function AboutProcessFilm() {
+  const scenes = [
+    {
+      src: plantationFlowerPods,
+      title: "Flowering stage",
+      text: "Cardamom flowers and young green pods growing close to the soil.",
+      alt: "Fresh green cardamom pods growing with white flowers"
+    },
+    {
+      src: plantationBlossomClose,
+      title: "Young pods",
+      text: "The pods are still fresh on the plant before drying and grading.",
+      alt: "Close view of cardamom blossom and young pods"
+    },
+    {
+      src: plantationStoneWall,
+      title: "Plantation growth",
+      text: "Real cardamom plants growing along the stone walls in a shaded plantation.",
+      alt: "Cardamom plants growing beside a stone wall"
+    },
+    {
+      src: "/assets/product-green-cardamom-pack.png",
+      title: "Packed for freshness",
+      text: "Special graded 7mm cardamom is sealed in clean retail pouches.",
+      alt: "Packed Idukki Spices green cardamom pouch"
+    }
+  ];
+  const process = [
+    {
+      icon: <Leaf size={20} />,
+      title: "Grow",
+      text: "Shade-grown plants form flowers and young pods in the cool plantation climate."
+    },
+    {
+      icon: <Sparkles size={20} />,
+      title: "Select",
+      text: "Pods are checked for colour, aroma, and special 7mm grading before packing."
+    },
+    {
+      icon: <Package size={20} />,
+      title: "Seal",
+      text: "Clean pouches protect the natural aroma until the spices reach your kitchen."
+    }
+  ];
+
+  return (
+    <section className="section about-motion" data-reveal>
+      <div className="about-motion-copy">
+        <p className="kicker">From plant to pack</p>
+        <h2>See how cardamom becomes a ready-to-ship spice.</h2>
+        <p>
+          Young pods, careful sorting, and sealed pouches keep the aroma protected from the plantation stage to
+          your kitchen.
+        </p>
+        <div className="about-motion-steps">
+          {process.map((step, index) => (
+            <article key={step.title} style={{ "--delay": `${index * 0.12}s` }}>
+              <span>{step.icon}</span>
+              <strong>{step.title}</strong>
+              <p>{step.text}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+      <div className="about-process-gallery" aria-label="Cardamom plantation and packing stages">
+        {scenes.map((scene, index) => (
+          <figure key={scene.title} style={{ "--delay": `${index * 0.1}s` }}>
+            <img src={scene.src} alt={scene.alt} loading="lazy" />
+            <figcaption>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <strong>{scene.title}</strong>
+              <p>{scene.text}</p>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
     </section>
   );
 }
@@ -1034,7 +1335,7 @@ function About() {
 
   return (
     <main>
-      <section className="split-hero">
+      <section className="split-hero" data-reveal>
         <div>
           <p className="kicker">About Idukki Spices</p>
           <h1>Built around freshness, aroma, and honest packing.</h1>
@@ -1042,7 +1343,7 @@ function About() {
         </div>
         <img src="/assets/idukki-plantation-wide.png" alt="Idukki plantation" />
       </section>
-      <section className="section plantation-gallery-section">
+      <section className="section plantation-gallery-section" data-reveal>
         <div className="section-title">
           <p className="kicker">From the plantation</p>
           <h2>Cardamom before it becomes a spice pack.</h2>
@@ -1057,10 +1358,11 @@ function About() {
           ))}
         </div>
       </section>
-      <section className="section visual-banner">
+      <AboutProcessFilm />
+      <section className="section visual-banner" data-reveal>
         <img src="/assets/spice-story-kitchen.png" alt="Idukki Spices story and kitchen uses" />
       </section>
-      <section className="section story-grid">
+      <section className="section story-grid" data-reveal>
         {steps.map((step, index) => (
           <article key={step.title}>
             <span>{String(index + 1).padStart(2, "0")}</span>
@@ -1910,6 +2212,14 @@ function Admin({ products, setProducts }) {
       setNote(error.message);
     }
   };
+  const sendMessageReply = async (message, replyText) => {
+    const result = await api("/api/contact-messages/reply", {
+      method: "POST",
+      body: JSON.stringify({ id: message.id, message: replyText })
+    });
+    setMessages((current) => current.map((item) => item.id === result.message.id ? result.message : item));
+    setNote(`Reply sent to ${message.email} from the Idukki Spices email.`);
+  };
 
   return (
     <main className="admin-shell">
@@ -2020,7 +2330,7 @@ function Admin({ products, setProducts }) {
             {messages.length ? (
               <div className="admin-message-scroll">
                 {messages.map((message) => (
-                  <AdminContactMessage key={message.id} message={message} onStatus={updateMessageStatus} />
+                  <AdminContactMessage key={message.id} message={message} onReply={sendMessageReply} onStatus={updateMessageStatus} />
                 ))}
               </div>
             ) : <p className="muted">No contact messages yet.</p>}
@@ -2031,7 +2341,11 @@ function Admin({ products, setProducts }) {
   );
 }
 
-function AdminContactMessage({ message, onStatus }) {
+function AdminContactMessage({ message, onReply, onStatus }) {
+  const [isReplyOpen, setIsReplyOpen] = useState(false);
+  const [replyText, setReplyText] = useState("Thank you for contacting Idukki Spices. We received your message and will help you shortly.");
+  const [isSending, setIsSending] = useState(false);
+  const [replyError, setReplyError] = useState("");
   const created = message.createdAt ? new Date(message.createdAt).toLocaleString(undefined, {
     day: "2-digit",
     month: "short",
@@ -2039,15 +2353,22 @@ function AdminContactMessage({ message, onStatus }) {
     hour: "2-digit",
     minute: "2-digit"
   }) : "Date unavailable";
-  const replySubject = encodeURIComponent("Reply from Idukki Spices");
-  const replyBody = encodeURIComponent([
-    `Hello ${message.name},`,
-    "",
-    "Thank you for contacting Idukki Spices.",
-    "",
-    "Regards,",
-    "Idukki Spices"
-  ].join("\n"));
+  const sendReply = async () => {
+    if (replyText.trim().length < 5) {
+      setReplyError("Please type a reply message first.");
+      return;
+    }
+    setIsSending(true);
+    setReplyError("");
+    try {
+      await onReply(message, replyText.trim());
+      setIsReplyOpen(false);
+    } catch (error) {
+      setReplyError(error.message);
+    } finally {
+      setIsSending(false);
+    }
+  };
   return (
     <article className={`admin-message ${message.status === "New" ? "unread" : ""}`}>
       <header>
@@ -2058,10 +2379,28 @@ function AdminContactMessage({ message, onStatus }) {
         <b>{message.status}</b>
       </header>
       <p>{message.message}</p>
+      {isReplyOpen && (
+        <div className="admin-reply-box">
+          <label htmlFor={`reply-${message.id}`}>Reply from Idukki Spices email</label>
+          <textarea
+            id={`reply-${message.id}`}
+            onChange={(event) => setReplyText(event.target.value)}
+            rows="5"
+            value={replyText}
+          />
+          {replyError && <p className="reply-error">{replyError}</p>}
+          <div>
+            <button className="ghost small" disabled={isSending} onClick={() => setIsReplyOpen(false)} type="button">Cancel</button>
+            <button className="primary small" disabled={isSending} onClick={sendReply} type="button">
+              {isSending ? "Sending..." : "Send reply"}
+            </button>
+          </div>
+        </div>
+      )}
       <footer>
         <span>{created}</span>
         <div>
-          <a className="ghost small" href={`mailto:${message.email}?subject=${replySubject}&body=${replyBody}`}>Reply</a>
+          <button className="ghost small" onClick={() => setIsReplyOpen((open) => !open)} type="button">Reply</button>
           <button className="ghost small" disabled={message.status === "Read"} onClick={() => onStatus(message, "Read")} type="button">Mark read</button>
           <button className="primary small" disabled={message.status === "Replied"} onClick={() => onStatus(message, "Replied")} type="button">Mark replied</button>
         </div>
