@@ -488,7 +488,7 @@ async function sendEmail(to, subject, body, attachments = []) {
   }
   const payload = {
     personalizations: [{ to: [{ email: to }] }],
-    from: parseEmailAddress(process.env.EMAIL_FROM || "Idukki Spices <orders@idukkispices.com>"),
+    from: parseEmailAddress(process.env.EMAIL_FROM || "Idukki Spices <idukkispicesfr@gmail.com>"),
     subject,
     content: [{ type: "text/plain", value: body }]
   };
@@ -733,6 +733,36 @@ async function handleApi(req, res, url) {
       if (!updated) return sendJson(res, 404, { error: "Message not found." });
       return sendJson(res, 200, updated);
     }
+  }
+
+  if (url.pathname === "/api/contact-messages/reply" && req.method === "POST") {
+    if (!requireAdmin(req, res)) return;
+    const body = await readBody(req);
+    const id = String(body?.id || "");
+    const replyText = String(body?.message || "").trim();
+    if (!id) return sendJson(res, 400, { error: "Message id is required." });
+    if (replyText.length < 5) return sendJson(res, 400, { error: "Reply message is too short." });
+    const message = database.getContactMessages().find((item) => item.id === id);
+    if (!message) return sendJson(res, 404, { error: "Message not found." });
+    const emailResult = await sendEmail(
+      message.email,
+      "Reply from Idukki Spices",
+      [
+        `Hello ${message.name},`,
+        "",
+        replyText,
+        "",
+        "Regards,",
+        "Idukki Spices",
+        "",
+        "Contact: idukkispicesfr@gmail.com"
+      ].join("\n")
+    );
+    if (!emailResult.sent) {
+      return sendJson(res, 503, { error: `Email provider is not configured: ${emailResult.setupRequired || "unknown"}` });
+    }
+    const updated = database.updateContactMessage(id, { status: "Replied" });
+    return sendJson(res, 200, { message: updated, email: emailResult });
   }
 
   if (url.pathname === "/api/accounts/register" && req.method === "POST") {
