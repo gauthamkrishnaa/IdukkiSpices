@@ -29,6 +29,17 @@ import plantationFlowerPods from "../assets/plantation-cardamom-flower-pods.jpeg
 import plantationPath from "../assets/plantation-cardamom-path.jpeg";
 import plantationStoneWall from "../assets/plantation-cardamom-stone-wall.jpeg";
 import plantationBlossomClose from "../assets/plantation-cardamom-blossom-close.jpeg";
+import aboutHeroCardamomKerala from "../assets/about-hero-cardamom-kerala.png";
+import aboutProductBowls from "../assets/about-product-bowls.png";
+import aboutProductsPouches from "../assets/about-products-pouches.png";
+import aboutStorySpicePlate from "../assets/about-story-spice-plate.png";
+import homeSlideBayLeaves from "../assets/home-slide-bay-leaves.png";
+import homeSlideStarAnise from "../assets/home-slide-star-anise.png";
+import homeSlideCloves from "../assets/home-slide-cloves.png";
+import homeSlideCardamom from "../assets/home-slide-cardamom.png";
+import homeSlideCinnamon from "../assets/home-slide-cinnamon.png";
+import homeSlideBlackPepper from "../assets/home-slide-black-pepper.png";
+import homeSlideMixedSpices from "../assets/home-slide-mixed-spices.png";
 
 const money = (value) => `€${Number(value || 0).toFixed(2)}`;
 const MIN_ORDER_VALUE = 20;
@@ -673,7 +684,10 @@ function App() {
     sessionStorage.getItem(customerKey) ? readJsonStorage(localStorage, cartKey, {}) : {}
   ));
   const [customer, setCustomer] = useState(() => readJsonStorage(sessionStorage, customerDataKey, null));
-  const [lang, setLang] = useState(() => localStorage.getItem("idukki-language") || "en");
+  const [lang, setLang] = useState(() => {
+    const savedLanguage = localStorage.getItem("idukki-language");
+    return savedLanguage === "en" || savedLanguage === "fr" ? savedLanguage : "fr";
+  });
   const [theme, setTheme] = useState(() => localStorage.getItem(themeKey) || "light");
   const [pageBusy, setPageBusy] = useState(false);
   const [customerNotifications, setCustomerNotifications] = useState([]);
@@ -860,7 +874,7 @@ function App() {
   const props = { go, products, cart, setCart, addToCart, cartItems, cartTotal, shippingFee, orderTotal, canCheckout, customer, setCustomer, lang, theme, setTheme, addCustomerNotification, syncCustomerOrderNotifications };
   const view = {
     index: <Home {...props} />,
-    about: <About />,
+    about: <About lang={lang} />,
     shop: <Shop {...props} />,
     cart: <Cart {...props} />,
     contact: <Contact />,
@@ -1069,10 +1083,13 @@ function SpiceJourney({ go }) {
     { label: "Deliver", detail: "France orders move with tracking updates." }
   ];
   const cinemaImages = [
-    { src: plantationFlowerPods, alt: "Cardamom flowers and young pods on the plant" },
-    { src: "/assets/product-green-cardamom-pack.png", alt: "Idukki Spices green cardamom pack" },
-    { src: "/assets/product-mixed-spices-pack.png", alt: "Idukki Spices mixed spice pack" },
-    { src: plantationPath, alt: "Cardamom plantation path" }
+    { src: homeSlideCardamom, alt: "Green cardamom pods styled on a wooden table" },
+    { src: homeSlideBlackPepper, alt: "Black peppercorns on a dark cloth with a brass spoon" },
+    { src: homeSlideCinnamon, alt: "Cinnamon sticks arranged on a dark cloth" },
+    { src: homeSlideCloves, alt: "Whole cloves with star anise on a carved wooden table" },
+    { src: homeSlideStarAnise, alt: "Star anise in a bowl on a rustic tabletop" },
+    { src: homeSlideBayLeaves, alt: "Bay leaves in a ceramic bowl beside spice jars" },
+    { src: homeSlideMixedSpices, alt: "Mixed whole spices arranged with labels on a wooden table" }
   ];
   const loopImages = [...cinemaImages, ...cinemaImages];
 
@@ -1212,32 +1229,6 @@ function HomeDeliveryBanner({ go, lang }) {
 }
 
 function AboutProcessFilm() {
-  const scenes = [
-    {
-      src: plantationFlowerPods,
-      title: "Flowering stage",
-      text: "Cardamom flowers and young green pods growing close to the soil.",
-      alt: "Fresh green cardamom pods growing with white flowers"
-    },
-    {
-      src: plantationBlossomClose,
-      title: "Young pods",
-      text: "The pods are still fresh on the plant before drying and grading.",
-      alt: "Close view of cardamom blossom and young pods"
-    },
-    {
-      src: plantationStoneWall,
-      title: "Plantation growth",
-      text: "Real cardamom plants growing along the stone walls in a shaded plantation.",
-      alt: "Cardamom plants growing beside a stone wall"
-    },
-    {
-      src: "/assets/product-green-cardamom-pack.png",
-      title: "Packed for freshness",
-      text: "Special graded 7mm cardamom is sealed in clean retail pouches.",
-      alt: "Packed Idukki Spices green cardamom pouch"
-    }
-  ];
   const process = [
     {
       icon: <Leaf size={20} />,
@@ -1253,6 +1244,32 @@ function AboutProcessFilm() {
       icon: <Package size={20} />,
       title: "Seal",
       text: "Clean pouches protect the natural aroma until the spices reach your kitchen."
+    }
+  ];
+  const journey = [
+    {
+      number: "01",
+      icon: <Leaf size={22} />,
+      title: "Grow",
+      text: "Cardamom grows in shaded, humid plantations where flowers and young pods develop close to the soil."
+    },
+    {
+      number: "02",
+      icon: <Sparkles size={22} />,
+      title: "Grade",
+      text: "Pods are selected for colour, aroma, and special 7mm size before they enter the pack."
+    },
+    {
+      number: "03",
+      icon: <Package size={22} />,
+      title: "Pack",
+      text: "Clean pouches protect the natural fragrance and keep every batch ready for shipping."
+    },
+    {
+      number: "04",
+      icon: <Truck size={22} />,
+      title: "Deliver",
+      text: "Orders are prepared for France with secure checkout, confirmation email, and tracking updates."
     }
   ];
 
@@ -1275,101 +1292,279 @@ function AboutProcessFilm() {
           ))}
         </div>
       </div>
-      <div className="about-process-gallery" aria-label="Cardamom plantation and packing stages">
-        {scenes.map((scene, index) => (
-          <figure key={scene.title} style={{ "--delay": `${index * 0.1}s` }}>
-            <img src={scene.src} alt={scene.alt} loading="lazy" />
-            <figcaption>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <strong>{scene.title}</strong>
-              <p>{scene.text}</p>
-            </figcaption>
-          </figure>
+      <div className="about-process-gallery about-process-cards" aria-label="Cardamom process stages">
+        {journey.map((step, index) => (
+          <article key={step.title} style={{ "--delay": `${index * 0.1}s` }}>
+            <div>
+              <span className="process-number">{step.number}</span>
+              <span className="process-icon">{step.icon}</span>
+            </div>
+            <strong>{step.title}</strong>
+            <p>{step.text}</p>
+          </article>
         ))}
       </div>
     </section>
   );
 }
 
-function About() {
-  const steps = [
-    {
-      title: "Harvest",
-      text: "Fresh spices are selected from trusted Kerala-inspired sources at the right stage for aroma and quality."
+function About({ lang = "fr" }) {
+  const aboutCopy = {
+    en: {
+      heroEyebrow: "About us",
+      heroTitle: "Bringing the soul of Kerala to every kitchen.",
+      heroText:
+        "Idukki Spices brings aromatic cardamom, pepper, and warm whole spices to homes in France with honest packs, clear pricing, and secure checkout.",
+      heroBadges: ["Special graded 7mm cardamom", "Freshly packed", "France delivery"],
+      storyKicker: "Our story",
+      storyTitle: "Small packs, serious aroma.",
+      storyOne:
+        "Idukki is known for misty hills, shaded plantations, and spices with deep natural fragrance. Our work is simple: bring that Kerala-inspired flavour into everyday kitchens without losing freshness on the way.",
+      storyTwo:
+        "We focus on whole spices customers can see, smell, and trust: green cardamom, black pepper, cloves, cinnamon, star anise, bay leaves, and ready-to-cook mixed packs.",
+      mission: "Our mission is to connect homes across Europe with the true taste of Kerala.",
+      reasonsKicker: "Why choose us",
+      reasonsTitle: "Made for flavour, packed for trust.",
+      productsKicker: "Our products",
+      productsTitle: "A curated range of Kerala-inspired spices.",
+      productsCta: "Shop all products",
+      promiseKicker: "Our promise",
+      promiseTitle: "Freshness is the point.",
+      promiseOne:
+        "From sourcing to packaging, every choice is made to protect aroma and keep the spices ready for real cooking: curries, rice dishes, soups, marinades, tea, desserts, and baking.",
+      promiseTwo:
+        "When you choose Idukki Spices, you choose authenticity, careful packing, and the rich culinary heritage of Kerala.",
+      europeKicker: "From Kerala to Europe",
+      europeTitle: "Built for customers in France.",
+      europeText:
+        "We serve customers across France with secure payment, order updates, and a simple shopping experience. Whether it is a family recipe or a new flavour experiment, our packs are made to reach your kitchen ready to use.",
+      europeCta: "Explore our collection",
+      galleryKicker: "From the plantation",
+      galleryTitle: "Cardamom before it becomes a spice pack.",
+      storyAlt: "Kerala spices arranged in bowls on a wooden tray",
+      promiseAlt: "Bowls of cardamom, pepper, cloves, cinnamon, bay leaves, and star anise",
+      europeAlt: "Idukki Spices pouches displayed on a wooden table",
+      reasons: [
+        {
+          title: "Authentic origin",
+          text: "A Kerala-inspired spice story built around careful sourcing, bold aroma, and honest packs."
+        },
+        {
+          title: "Premium quality",
+          text: "Our green cardamom is special graded 7mm, selected for colour, aroma, and fresh natural sweetness."
+        },
+        {
+          title: "Freshly packed",
+          text: "Each pouch is sealed with care so the fragrance stays protected until it reaches your kitchen."
+        },
+        {
+          title: "Clear service",
+          text: "Customers in France get secure checkout, order emails, and updates from confirmation to delivery."
+        }
+      ],
+      products: ["Green Cardamom 7mm", "Black Pepper", "Cloves", "Cinnamon", "Bay Leaves", "Star Anise"],
+      plantationPhotos: [
+        {
+          title: "Cardamom flowers",
+          text: "Young pods growing close to the soil before drying and grading."
+        },
+        {
+          title: "Plantation path",
+          text: "Shaded cardamom rows in a cool, humid hillside climate."
+        },
+        {
+          title: "Stone terrace pods",
+          text: "Green pods forming around the old plantation stone terraces."
+        },
+        {
+          title: "Blossom detail",
+          text: "The flower stage that comes before the spice reaches the pack."
+        }
+      ]
     },
-    {
-      title: "Sort",
-      text: "Every batch is checked, cleaned, and separated so only neat, full-flavoured spices move forward."
-    },
-    {
-      title: "Pack",
-      text: "The spices are sealed in clean pouches with clear labels to protect freshness until they reach your kitchen."
-    },
-    {
-      title: "Deliver",
-      text: "Orders are prepared carefully and sent with tracking updates so customers know what is happening."
+    fr: {
+      heroEyebrow: "A propos de nous",
+      heroTitle: "L'ame du Kerala dans chaque cuisine.",
+      heroText:
+        "Idukki Spices apporte la cardamome aromatique, le poivre et les epices entieres aux foyers en France avec des sachets clairs, des prix transparents et un paiement securise.",
+      heroBadges: ["Cardamome calibre special 7 mm", "Fraichement emballe", "Livraison en France"],
+      storyKicker: "Notre histoire",
+      storyTitle: "Petits sachets, grands aromes.",
+      storyOne:
+        "Idukki est connu pour ses collines brumeuses, ses plantations ombragees et ses epices au parfum naturel profond. Notre travail est simple : apporter cette saveur inspiree du Kerala aux cuisines du quotidien sans perdre la fraicheur en route.",
+      storyTwo:
+        "Nous mettons en avant des epices entieres que les clients peuvent voir, sentir et faire confiance : cardamome verte, poivre noir, clous de girofle, cannelle, anis etoile, feuilles de laurier et melanges prets a cuisiner.",
+      mission: "Notre mission est de relier les foyers en Europe au vrai gout du Kerala.",
+      reasonsKicker: "Pourquoi nous choisir",
+      reasonsTitle: "Du gout, avec un emballage de confiance.",
+      productsKicker: "Nos produits",
+      productsTitle: "Une selection d'epices inspirees du Kerala.",
+      productsCta: "Voir tous les produits",
+      promiseKicker: "Notre promesse",
+      promiseTitle: "La fraicheur avant tout.",
+      promiseOne:
+        "Du sourcing a l'emballage, chaque choix protege l'arome et garde les epices pretes pour la vraie cuisine : currys, riz, soupes, marinades, the, desserts et patisserie.",
+      promiseTwo:
+        "Choisir Idukki Spices, c'est choisir l'authenticite, un emballage soigne et le riche heritage culinaire du Kerala.",
+      europeKicker: "Du Kerala a l'Europe",
+      europeTitle: "Pense pour les clients en France.",
+      europeText:
+        "Nous servons les clients en France avec paiement securise, mises a jour de commande et une experience d'achat simple. Pour une recette familiale ou une nouvelle idee, nos sachets arrivent prets a utiliser.",
+      europeCta: "Explorer la collection",
+      galleryKicker: "Depuis la plantation",
+      galleryTitle: "La cardamome avant de devenir un sachet d'epices.",
+      storyAlt: "Epices du Kerala disposees dans des bols sur un plateau en bois",
+      promiseAlt: "Bols de cardamome, poivre, clous de girofle, cannelle, feuilles de laurier et anis etoile",
+      europeAlt: "Sachets Idukki Spices presentes sur une table en bois",
+      reasons: [
+        {
+          title: "Origine authentique",
+          text: "Une histoire d'epices inspiree du Kerala, basee sur un sourcing soigne, des aromes puissants et des sachets honnetes."
+        },
+        {
+          title: "Qualite premium",
+          text: "Notre cardamome verte est calibre special 7 mm, selectionnee pour sa couleur, son arome et sa douceur naturelle."
+        },
+        {
+          title: "Fraichement emballe",
+          text: "Chaque sachet est scelle avec soin pour proteger le parfum jusqu'a votre cuisine."
+        },
+        {
+          title: "Service clair",
+          text: "Les clients en France profitent d'un paiement securise, d'emails de commande et de mises a jour jusqu'a la livraison."
+        }
+      ],
+      products: ["Cardamome verte 7 mm", "Poivre noir", "Clous de girofle", "Cannelle", "Feuilles de laurier", "Anis etoile"],
+      plantationPhotos: [
+        {
+          title: "Fleurs de cardamome",
+          text: "Jeunes gousses proches du sol avant le sechage et le calibrage."
+        },
+        {
+          title: "Chemin de plantation",
+          text: "Rangees de cardamome ombragees dans un climat frais et humide."
+        },
+        {
+          title: "Terrasses de pierre",
+          text: "Gousses vertes formees autour des anciennes terrasses de plantation."
+        },
+        {
+          title: "Detail de fleur",
+          text: "L'etape de floraison avant que l'epice arrive dans le sachet."
+        }
+      ]
     }
+  };
+
+  const copy = aboutCopy[lang] || aboutCopy.fr;
+  const reasonIcons = [<Leaf size={24} />, <Sparkles size={24} />, <Package size={24} />, <ShieldCheck size={24} />];
+  const reasons = copy.reasons.map((reason, index) => ({ ...reason, icon: reasonIcons[index] }));
+  const productImages = [
+    "/assets/product-green-cardamom-pack.png",
+    "/assets/product-black-pepper-pack.png",
+    "/assets/product-cloves-pack.png",
+    "/assets/product-cinnamon-pack.png",
+    "/assets/product-bay-leaves-pack.png",
+    "/assets/product-star-anise-pack.png"
   ];
-  const plantationPhotos = [
-    {
-      src: plantationFlowerPods,
-      alt: "Cardamom flowers and young green pods on the plant",
-      title: "Cardamom flower and young pods"
-    },
-    {
-      src: plantationPath,
-      alt: "Stone path through a green cardamom plantation",
-      title: "Stone path through the plantation"
-    },
-    {
-      src: plantationStoneWall,
-      alt: "Cardamom plants growing along a stone wall",
-      title: "Cardamom growing along stone walls"
-    },
-    {
-      src: plantationBlossomClose,
-      alt: "Close view of cardamom blossoms and fresh pods after rain",
-      title: "Fresh blossom after rain"
-    }
-  ];
+  const productHighlights = copy.products.map((name, index) => ({ name, image: productImages[index] }));
+  const plantationImages = [plantationFlowerPods, plantationPath, plantationStoneWall, plantationBlossomClose];
+  const plantationPhotos = copy.plantationPhotos.map((photo, index) => ({ ...photo, src: plantationImages[index] }));
 
   return (
-    <main>
-      <section className="split-hero" data-reveal>
-        <div>
-          <p className="kicker">About Idukki Spices</p>
-          <h1>Built around freshness, aroma, and honest packing.</h1>
-          <p>We bring classic Kerala spices into clean retail packs for everyday cooking, gifting, and family kitchens.</p>
+    <main className="about-luxe">
+      <section
+        className="about-luxe-hero"
+        data-reveal
+        style={{
+          backgroundImage: `linear-gradient(90deg, rgba(18, 32, 20, 0.86), rgba(18, 32, 20, 0.44) 54%, rgba(18, 32, 20, 0.08)), url(${aboutHeroCardamomKerala})`
+        }}
+      >
+        <div className="about-luxe-hero__content">
+          <span className="eyebrow">{copy.heroEyebrow}</span>
+          <h1>{copy.heroTitle}</h1>
+          <p>{copy.heroText}</p>
+          <div className="about-luxe-hero__badges">
+            {copy.heroBadges.map((badge) => (
+              <span key={badge}>{badge}</span>
+            ))}
+          </div>
         </div>
-        <img src="/assets/idukki-plantation-wide.png" alt="Idukki plantation" />
       </section>
-      <section className="section plantation-gallery-section" data-reveal>
-        <div className="section-title">
-          <p className="kicker">From the plantation</p>
-          <h2>Cardamom before it becomes a spice pack.</h2>
-          <p>Real cardamom plants, flowers, and young pods from the growing stage before drying and grading.</p>
+
+      <section className="about-story-panel" data-reveal>
+        <div>
+          <span className="section-kicker">{copy.storyKicker}</span>
+          <h2>{copy.storyTitle}</h2>
+          <p>{copy.storyOne}</p>
+          <p>{copy.storyTwo}</p>
+          <strong>{copy.mission}</strong>
         </div>
-        <div className="plantation-gallery" aria-label="Idukki Spices plantation photo gallery">
-          {plantationPhotos.map((photo) => (
-            <figure key={photo.src}>
-              <img src={photo.src} alt={photo.alt} loading="lazy" />
-              <figcaption>{photo.title}</figcaption>
-            </figure>
+        <img src={aboutStorySpicePlate} alt={copy.storyAlt} />
+      </section>
+
+      <section className="about-reasons" data-reveal>
+        <span className="section-kicker">{copy.reasonsKicker}</span>
+        <h2>{copy.reasonsTitle}</h2>
+        <div className="about-reasons__grid">
+          {reasons.map((reason) => (
+            <article className="about-reason-card" key={reason.title}>
+              <div>{reason.icon}</div>
+              <h3>{reason.title}</h3>
+              <p>{reason.text}</p>
+            </article>
           ))}
         </div>
       </section>
-      <AboutProcessFilm />
-      <section className="section visual-banner" data-reveal>
-        <img src="/assets/spice-story-kitchen.png" alt="Idukki Spices story and kitchen uses" />
+
+      <section className="about-products-strip" data-reveal>
+        <span className="section-kicker">{copy.productsKicker}</span>
+        <h2>{copy.productsTitle}</h2>
+        <div className="about-products-strip__row">
+          {productHighlights.map((product) => (
+            <a className="about-product-orb" href="/shop.html" key={product.name}>
+              <img src={product.image} alt={product.name} />
+              <span>{product.name}</span>
+            </a>
+          ))}
+        </div>
+        <a className="primary" href="/shop.html">{copy.productsCta}</a>
       </section>
-      <section className="section story-grid" data-reveal>
-        {steps.map((step, index) => (
-          <article key={step.title}>
-            <span>{String(index + 1).padStart(2, "0")}</span>
-            <h3>{step.title}</h3>
-            <p>{step.text}</p>
-          </article>
-        ))}
+
+      <section className="about-promise-band" data-reveal>
+        <img src={aboutProductBowls} alt={copy.promiseAlt} />
+        <div>
+          <span className="section-kicker">{copy.promiseKicker}</span>
+          <h2>{copy.promiseTitle}</h2>
+          <p>{copy.promiseOne}</p>
+          <p>{copy.promiseTwo}</p>
+        </div>
+      </section>
+
+      <section className="about-europe" data-reveal>
+        <div>
+          <span className="section-kicker">{copy.europeKicker}</span>
+          <h2>{copy.europeTitle}</h2>
+          <p>{copy.europeText}</p>
+          <a className="primary" href="/shop.html">{copy.europeCta}</a>
+        </div>
+        <img src={aboutProductsPouches} alt={copy.europeAlt} />
+      </section>
+
+      <section className="about-final-gallery" data-reveal>
+        <span className="section-kicker">{copy.galleryKicker}</span>
+        <h2>{copy.galleryTitle}</h2>
+        <div className="equal-gallery">
+          {plantationPhotos.map((photo) => (
+            <figure key={photo.title}>
+              <img src={photo.src} alt={photo.title} loading="lazy" />
+              <figcaption>
+                <strong>{photo.title}</strong>
+                <span>{photo.text}</span>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
       </section>
     </main>
   );
