@@ -680,9 +680,7 @@ function useScrollReveal(scopeKey) {
 function App() {
   const [page, setPage] = useState(pageFromPath());
   const [products, setProducts] = useState([]);
-  const [cart, setCart] = useState(() => (
-    sessionStorage.getItem(customerKey) ? readJsonStorage(localStorage, cartKey, {}) : {}
-  ));
+  const [cart, setCart] = useState(() => readJsonStorage(localStorage, cartKey, {}));
   const [customer, setCustomer] = useState(() => readJsonStorage(sessionStorage, customerDataKey, null));
   const [lang, setLang] = useState(() => {
     const savedLanguage = localStorage.getItem("idukki-language");
@@ -753,12 +751,6 @@ function App() {
       });
     return () => { active = false; };
   }, [customer?.email]);
-
-  useEffect(() => {
-    if (customer) return;
-    localStorage.removeItem(cartKey);
-    setCart({});
-  }, [customer]);
 
   const go = (next) => {
     const path = next === "index" ? "/" : `/${next}.html`;
