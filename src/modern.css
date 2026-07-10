@@ -2753,6 +2753,108 @@ h3 {
   font-weight: 850;
 }
 
+.checkout-policy-note {
+  margin: 2px 0 14px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.checkout-policy-note a {
+  color: var(--leaf-dark);
+  font-weight: 850;
+}
+
+.policy-page {
+  max-width: 1000px;
+}
+
+.policy-hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(30px, 6vw, 64px);
+  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(30, 79, 45, 0.97), rgba(144, 89, 41, 0.9));
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+
+.policy-hero::after {
+  content: "";
+  position: absolute;
+  right: -70px;
+  bottom: -90px;
+  width: 280px;
+  height: 280px;
+  border: 45px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+}
+
+.policy-hero h1 {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 20px;
+  font-size: clamp(2.7rem, 7vw, 5.4rem);
+}
+
+.policy-hero > p:not(.kicker) {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.policy-hero > span {
+  position: relative;
+  z-index: 1;
+  font-size: 0.83rem;
+  font-weight: 850;
+  opacity: 0.76;
+}
+
+.policy-sections {
+  display: grid;
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.policy-sections section {
+  padding: clamp(22px, 4vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel);
+  box-shadow: 0 14px 38px rgba(36, 29, 23, 0.07);
+}
+
+.policy-sections h2 {
+  margin-bottom: 12px;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+
+.policy-sections p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.policy-contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin-bottom: 24px;
+  padding: 22px;
+  border-radius: 18px;
+  background: rgba(47, 111, 68, 0.1);
+}
+
+.policy-contact a {
+  color: var(--leaf-dark);
+  font-weight: 850;
+}
+
 .split-hero img {
   min-height: 560px;
   border-radius: 24px;
@@ -3525,6 +3627,24 @@ h3 {
   padding: 24px 0 40px;
   border-top: 1px solid var(--line);
   color: var(--muted);
+}
+
+.footer-policies {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding-top: 4px;
+}
+
+.footer-policies a {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.footer-policies a:hover {
+  color: var(--leaf-dark);
 }
 
 .site-footer > div:first-child {

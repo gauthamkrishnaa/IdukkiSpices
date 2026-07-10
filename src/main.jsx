@@ -174,6 +174,30 @@ const seoPages = {
     path: "/contact.html",
     image: "/assets/idukki-spices-logo.jpeg"
   },
+  privacy: {
+    title: "Privacy Policy | Idukki Spices",
+    description: "Learn how Idukki Spices collects, uses, protects, and manages customer information.",
+    path: "/privacy.html",
+    image: "/assets/idukki-spices-logo.jpeg"
+  },
+  terms: {
+    title: "Terms and Conditions | Idukki Spices",
+    description: "Read the terms that apply when browsing and ordering from Idukki Spices.",
+    path: "/terms.html",
+    image: "/assets/idukki-spices-logo.jpeg"
+  },
+  shipping: {
+    title: "Shipping Policy | Idukki Spices",
+    description: "Review Idukki Spices order minimums, delivery charges, dispatch, and delivery information.",
+    path: "/shipping.html",
+    image: "/assets/idukki-spices-logo.jpeg"
+  },
+  refunds: {
+    title: "Return and Refund Policy | Idukki Spices",
+    description: "Review the Idukki Spices cancellation, damaged-order, return, and refund process.",
+    path: "/refunds.html",
+    image: "/assets/idukki-spices-logo.jpeg"
+  },
   auth: {
     title: "Login | Idukki Spices",
     description: "Login or create an Idukki Spices account to save details and track your orders.",
@@ -199,7 +223,7 @@ const seoPages = {
     image: "/assets/idukki-spices-logo.jpeg"
   }
 };
-const indexablePages = new Set(["index", "about", "shop", "contact"]);
+const indexablePages = new Set(["index", "about", "shop", "contact", "privacy", "terms", "shipping", "refunds"]);
 
 const setMetaTag = (selector, attributes) => {
   let tag = document.head.querySelector(selector);
@@ -870,6 +894,10 @@ function App() {
     shop: <Shop {...props} />,
     cart: <Cart {...props} />,
     contact: <Contact />,
+    privacy: <PolicyPage type="privacy" lang={lang} />,
+    terms: <PolicyPage type="terms" lang={lang} />,
+    shipping: <PolicyPage type="shipping" lang={lang} />,
+    refunds: <PolicyPage type="refunds" lang={lang} />,
     checkout: <Checkout {...props} />,
     auth: <Auth setCustomer={setCustomer} go={go} />,
     account: <Account customer={customer} setCustomer={setCustomer} setCart={setCart} go={go} lang={lang} theme={theme} setTheme={setTheme} addCustomerNotification={addCustomerNotification} syncCustomerOrderNotifications={syncCustomerOrderNotifications} />,
@@ -901,7 +929,7 @@ function App() {
         </div>
       )}
       {view}
-      {!isAdminPage && <Footer />}
+      {!isAdminPage && <Footer lang={lang} />}
     </React.Fragment>
   );
 }
@@ -1903,6 +1931,12 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
         <Field label="Email" type="email" value={form.email} onChange={(value) => update("email", value)} required />
         <Field label="Phone number" type="tel" value={form.phone} onChange={(value) => update("phone", value)} placeholder="Phone number" required />
         <AddressField value={form.address} onChange={(value) => update("address", value)} required />
+        <p className="checkout-policy-note">
+          {lang === "fr" ? "En continuant, vous acceptez nos " : "By continuing, you agree to our "}
+          <a href="/terms.html">{lang === "fr" ? "conditions générales" : "terms and conditions"}</a>
+          {lang === "fr" ? " et reconnaissez notre " : " and acknowledge our "}
+          <a href="/privacy.html">{lang === "fr" ? "politique de confidentialité" : "privacy policy"}</a>.
+        </p>
         <button className="primary" type="submit"><CreditCard size={18} /> {cancelledOrderId ? "Try payment again" : "Pay securely"}</button>
         {note && <p className="notice">{note}</p>}
       </form>
@@ -2945,11 +2979,149 @@ function InstagramIcon({ size = 20 }) {
   );
 }
 
+const policyContent = {
+  en: {
+    privacy: {
+      eyebrow: "Your information",
+      title: "Privacy policy",
+      intro: "This policy explains how Idukki Spices uses information provided through this website when you create an account, contact us, place an order, or request support.",
+      sections: [
+        ["Information we collect", "Account and contact details such as your name, email address, phone number and delivery address; order and support history; and technical information required to keep the service secure. Payment card details are entered on Stripe's hosted payment page and are not stored by Idukki Spices."],
+        ["Why we use it", "We use this information to provide accounts, process and deliver orders, send transactional updates, respond to questions, prevent misuse, and meet accounting or other legal obligations. These uses are based on performing the purchase contract, complying with legal duties, and our legitimate interest in operating a secure shop."],
+        ["Service providers", "Information is shared only when needed with providers supporting hosting, payment processing, email delivery, and parcel delivery. Those providers process information under their own applicable safeguards. We do not sell customer information."],
+        ["Storage and retention", "The cart, language and display preferences may be saved in your browser. Account and order records are kept only for as long as required to provide the service, handle disputes, maintain security, and satisfy applicable legal or accounting duties."],
+        ["Your rights", "Subject to applicable law, you may request access, correction, deletion, restriction, objection, or portability of your personal information. You may also complain to the CNIL. Contact us using the email below to exercise a right."],
+        ["Security and updates", "We use HTTPS, access controls, and third-party payment processing to reduce risk. No internet service can guarantee absolute security. We may update this policy when the service or legal requirements change."]
+      ]
+    },
+    terms: {
+      eyebrow: "Shopping with us",
+      title: "Terms and conditions",
+      intro: "These terms apply to use of the Idukki Spices website and orders placed through it. They do not limit any mandatory consumer rights available under French or EU law.",
+      sections: [
+        ["Seller and contact", `The shop is operated under the Idukki Spices name in Paris, France. Questions can be sent to ${companyContactEmail} or raised by phone at ${companyContactPhone}.`],
+        ["Products and availability", "We aim to describe and photograph products accurately. Natural spices may vary slightly in colour, size, and appearance. Product availability and displayed stock can change before payment is completed."],
+        ["Prices and orders", "Prices are shown in euros. The minimum order value is €20 before shipping. An order is confirmed only after successful payment. We may contact you if an item becomes unavailable or if the delivery information needs clarification."],
+        ["Payment", "Card payment is handled through Stripe's secure hosted checkout. Idukki Spices does not store full card details. A cancelled or failed payment does not create a confirmed order."],
+        ["Delivery", "Delivery charges and thresholds are shown before payment and are further explained in the Shipping Policy. Customers are responsible for supplying a complete and accurate delivery address."],
+        ["Cancellations and problems", "Cancellation, damaged-product, return, and refund requests are handled under our Return and Refund Policy. Nothing in these terms excludes legal guarantees or remedies that cannot lawfully be excluded."],
+        ["Acceptable use", "You must not misuse the website, attempt unauthorized access, interfere with its operation, or submit false account, payment, or delivery information."],
+        ["Changes and governing rules", "We may update these terms for future orders. The version displayed when an order is placed applies to that order, alongside mandatory French and EU consumer rules."]
+      ]
+    },
+    shipping: {
+      eyebrow: "Order delivery",
+      title: "Shipping policy",
+      intro: "This page explains the delivery charges and process currently used for Idukki Spices orders in France.",
+      sections: [
+        ["Order minimum", "The minimum product subtotal required to proceed to checkout is €20."],
+        ["Delivery charge", "Shipping costs €4.99 when the product subtotal is below €50. Standard shipping is free when the product subtotal reaches €50."],
+        ["Order preparation", "Preparation begins after payment is confirmed. You will receive order updates using the contact information supplied during checkout. Any delivery estimate communicated after purchase is an estimate rather than a guaranteed arrival time unless expressly stated otherwise."],
+        ["Delivery address", "Please check the recipient name, address, postcode, phone number, and access instructions before payment. Contact us promptly if a correction is needed; changes may not be possible after dispatch."],
+        ["Tracking and delays", "Tracking information is provided when available. Carrier delays, severe weather, access problems, or an incorrect address may affect delivery. Contact us if tracking shows an unusual delay and we will investigate with the delivery provider."],
+        ["Damaged or missing parcels", "If a parcel arrives visibly damaged, photograph the outer packaging and products and contact us promptly. For a parcel marked delivered but not received, first check with household members, neighbours, or the indicated safe place, then contact us for assistance."]
+      ]
+    },
+    refunds: {
+      eyebrow: "Order support",
+      title: "Return and refund policy",
+      intro: "We want order problems handled clearly. This policy works alongside the mandatory legal guarantees and consumer rights that apply to your purchase.",
+      sections: [
+        ["Before dispatch", "A signed-in customer may request cancellation from the account area while the order remains eligible. Contact us immediately if you need help. A request is not complete until the order status confirms cancellation."],
+        ["After cancellation", "If a paid order is cancelled, a refund can be requested from the account area. Once approved, the refund is sent through the original Stripe payment method. Your bank or card provider controls how long the credit takes to appear."],
+        ["Damaged, incorrect, or defective products", "Contact us promptly with your order number, a description of the problem, and clear photographs. Keep the product and packaging until we confirm the next step. Depending on the circumstances and your legal rights, we may arrange a replacement, refund, or another appropriate remedy."],
+        ["Change-of-mind returns", "Some food products may be excluded from the statutory withdrawal right when they are liable to deteriorate rapidly or when sealed goods cannot be returned for health or hygiene reasons after opening. Contact us before returning anything so we can confirm whether a withdrawal right applies and provide instructions."],
+        ["Return shipping", "Do not send a parcel without contacting us first. Where a product is faulty, damaged, or incorrect, we will explain the appropriate return or evidence process. For an eligible change-of-mind return, return costs may be the customer's responsibility where permitted by law."],
+        ["How to request help", `Email ${companyContactEmail} with your order number, or use your account order page. We assess each request against the order status, product condition, and applicable consumer law.`]
+      ]
+    }
+  },
+  fr: {
+    privacy: {
+      eyebrow: "Vos informations",
+      title: "Politique de confidentialité",
+      intro: "Cette politique explique comment Idukki Spices utilise les informations fournies lorsque vous créez un compte, nous contactez, passez une commande ou demandez de l'aide.",
+      sections: [
+        ["Données collectées", "Coordonnées et données de compte (nom, e-mail, téléphone et adresse de livraison), historique des commandes et de l'assistance, ainsi que les informations techniques nécessaires à la sécurité du service. Les données de carte sont saisies sur la page de paiement Stripe et ne sont pas stockées par Idukki Spices."],
+        ["Finalités et bases légales", "Nous utilisons ces données pour gérer les comptes, traiter et livrer les commandes, envoyer les notifications transactionnelles, répondre aux demandes, prévenir les abus et respecter nos obligations comptables ou légales. Ces traitements reposent sur l'exécution du contrat, une obligation légale ou notre intérêt légitime à exploiter une boutique sécurisée."],
+        ["Prestataires", "Les données sont partagées uniquement lorsque nécessaire avec les prestataires d'hébergement, de paiement, d'envoi d'e-mails et de livraison. Ces prestataires appliquent leurs propres garanties. Nous ne vendons pas les données des clients."],
+        ["Stockage et conservation", "Le panier, la langue et les préférences d'affichage peuvent être enregistrés dans votre navigateur. Les données de compte et de commande sont conservées uniquement pendant la durée nécessaire au service, aux litiges, à la sécurité et aux obligations légales ou comptables."],
+        ["Vos droits", "Selon la loi applicable, vous pouvez demander l'accès, la rectification, l'effacement, la limitation, l'opposition ou la portabilité de vos données. Vous pouvez également saisir la CNIL. Contactez-nous à l'adresse ci-dessous pour exercer vos droits."],
+        ["Sécurité et mises à jour", "Nous utilisons HTTPS, des contrôles d'accès et un prestataire de paiement externe afin de réduire les risques. Aucun service internet ne garantit une sécurité absolue. Cette politique pourra évoluer avec le service ou la réglementation."]
+      ]
+    },
+    terms: {
+      eyebrow: "Acheter chez nous",
+      title: "Conditions générales",
+      intro: "Ces conditions s'appliquent à l'utilisation du site Idukki Spices et aux commandes passées. Elles ne limitent aucun droit impératif accordé aux consommateurs par le droit français ou européen.",
+      sections: [
+        ["Vendeur et contact", `La boutique est exploitée sous le nom Idukki Spices à Paris, France. Écrivez à ${companyContactEmail} ou appelez le ${companyContactPhone}.`],
+        ["Produits et disponibilité", "Nous nous efforçons de décrire et photographier les produits fidèlement. Les épices naturelles peuvent varier légèrement en couleur, taille et apparence. La disponibilité peut changer avant la fin du paiement."],
+        ["Prix et commandes", "Les prix sont indiqués en euros. Le minimum de commande est de 20 € hors livraison. Une commande est confirmée uniquement après paiement réussi. Nous pouvons vous contacter en cas d'indisponibilité ou d'adresse à préciser."],
+        ["Paiement", "Le paiement par carte est traité sur la page sécurisée de Stripe. Idukki Spices ne conserve pas les données complètes de carte. Un paiement annulé ou échoué ne crée pas de commande confirmée."],
+        ["Livraison", "Les frais et seuils de livraison sont affichés avant paiement et détaillés dans la Politique de livraison. Le client doit fournir une adresse complète et exacte."],
+        ["Annulation et problèmes", "Les demandes d'annulation, de retour ou de remboursement suivent notre Politique de retour et remboursement. Aucune clause n'exclut les garanties légales ou recours impératifs."],
+        ["Utilisation acceptable", "Il est interdit de détourner le site, tenter un accès non autorisé, perturber son fonctionnement ou transmettre de fausses informations de compte, paiement ou livraison."],
+        ["Modifications et règles applicables", "Nous pouvons modifier ces conditions pour les commandes futures. La version affichée lors de la commande s'applique, avec les règles impératives françaises et européennes."]
+      ]
+    },
+    shipping: {
+      eyebrow: "Livraison des commandes",
+      title: "Politique de livraison",
+      intro: "Cette page présente les frais et le processus de livraison actuellement appliqués aux commandes Idukki Spices en France.",
+      sections: [
+        ["Minimum de commande", "Le sous-total minimum de produits pour accéder au paiement est de 20 €."],
+        ["Frais de livraison", "La livraison coûte 4,99 € lorsque le sous-total est inférieur à 50 €. La livraison standard est gratuite à partir de 50 €."],
+        ["Préparation", "La préparation commence après confirmation du paiement. Les mises à jour sont envoyées aux coordonnées fournies. Toute estimation communiquée après l'achat reste indicative, sauf engagement exprès contraire."],
+        ["Adresse", "Vérifiez le nom, l'adresse, le code postal, le téléphone et les instructions d'accès avant paiement. Contactez-nous rapidement pour une correction; elle peut devenir impossible après expédition."],
+        ["Suivi et retards", "Le suivi est communiqué lorsqu'il est disponible. Le transporteur, la météo, les difficultés d'accès ou une adresse erronée peuvent retarder la livraison. Contactez-nous en cas de retard inhabituel."],
+        ["Colis endommagé ou manquant", "Photographiez l'emballage et les produits si le colis arrive endommagé, puis contactez-nous rapidement. Si le suivi indique livré, vérifiez d'abord auprès du foyer, des voisins ou du lieu sûr indiqué."]
+      ]
+    },
+    refunds: {
+      eyebrow: "Assistance commande",
+      title: "Politique de retour et remboursement",
+      intro: "Nous voulons traiter clairement les problèmes de commande. Cette politique complète les garanties légales et droits impératifs applicables à votre achat.",
+      sections: [
+        ["Avant expédition", "Un client connecté peut demander l'annulation depuis son compte tant que la commande reste éligible. Contactez-nous immédiatement si nécessaire. La demande n'est effective que lorsque le statut confirme l'annulation."],
+        ["Après annulation", "Après l'annulation d'une commande payée, le remboursement peut être demandé depuis le compte. Une fois approuvé, il est envoyé vers le moyen de paiement Stripe d'origine. Le délai d'affichage dépend de la banque."],
+        ["Produit endommagé, incorrect ou défectueux", "Contactez-nous rapidement avec le numéro de commande, une description et des photos nettes. Conservez le produit et l'emballage. Selon la situation et vos droits, nous pourrons proposer remplacement, remboursement ou autre solution adaptée."],
+        ["Retour pour changement d'avis", "Certains aliments peuvent être exclus du droit de rétractation lorsqu'ils sont susceptibles de se détériorer rapidement ou lorsque des produits scellés ne peuvent être retournés pour des raisons d'hygiène après ouverture. Contactez-nous avant tout retour afin de vérifier le droit applicable."],
+        ["Frais de retour", "N'envoyez rien sans nous contacter. Pour un produit défectueux, endommagé ou incorrect, nous préciserons la procédure. Pour un retour éligible lié à un changement d'avis, les frais peuvent rester à la charge du client lorsque la loi le permet."],
+        ["Demander de l'aide", `Écrivez à ${companyContactEmail} avec votre numéro de commande ou utilisez la page de commande de votre compte. Chaque demande est examinée selon le statut, l'état du produit et le droit applicable.`]
+      ]
+    }
+  }
+};
+
+function PolicyPage({ type, lang }) {
+  const copy = policyContent[lang === "fr" ? "fr" : "en"][type];
+  return (
+    <main className="section policy-page">
+      <header className="policy-hero" data-reveal>
+        <p className="kicker">{copy.eyebrow}</p>
+        <h1>{copy.title}</h1>
+        <p>{copy.intro}</p>
+        <span>{lang === "fr" ? "Mise à jour : 10 juillet 2026" : "Last updated: 10 July 2026"}</span>
+      </header>
+      <div className="policy-sections">
+        {copy.sections.map(([title, body]) => <section key={title} data-reveal><h2>{title}</h2><p>{body}</p></section>)}
+      </div>
+      <aside className="policy-contact">
+        <strong>{lang === "fr" ? "Une question ?" : "Have a question?"}</strong>
+        <a href={`mailto:${companyContactEmail}`}>{companyContactEmail}</a>
+        <a href={`tel:${companyContactPhone.replace(/\s/g, "")}`}>{companyContactPhone}</a>
+      </aside>
+    </main>
+  );
+}
+
 function Empty({ title, action, onClick }) {
   return <div className="empty"><Sparkles /><h2>{title}</h2>{action && <button className="primary" onClick={onClick} type="button">{action}</button>}</div>;
 }
 
-function Footer() {
+function Footer({ lang }) {
+  const isFrench = lang === "fr";
   return (
     <footer className="site-footer">
       <div>
@@ -2962,6 +3134,12 @@ function Footer() {
         <a href={companyInstagramUrl} target="_blank" rel="noreferrer"><InstagramIcon size={17} /> @idukkispicesfr</a>
         <span><MapPin size={17} /> {companyContactLocation}</span>
       </div>
+      <nav className="footer-policies" aria-label={isFrench ? "Politiques" : "Policies"}>
+        <a href="/privacy.html">{isFrench ? "Confidentialité" : "Privacy"}</a>
+        <a href="/terms.html">{isFrench ? "Conditions générales" : "Terms"}</a>
+        <a href="/shipping.html">{isFrench ? "Livraison" : "Shipping"}</a>
+        <a href="/refunds.html">{isFrench ? "Retours et remboursements" : "Returns & refunds"}</a>
+      </nav>
     </footer>
   );
 }
