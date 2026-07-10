@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "vite build",
-    "start": "node server.js"
+    "start": "node server.js",
+    "load:test": "node scripts/load-test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.7.0",
     "lucide-react": "^1.21.0",
+    "pg": "^8.22.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "vite": "^6.4.3"

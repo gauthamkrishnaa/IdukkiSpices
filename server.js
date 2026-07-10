@@ -2,7 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const database = require("./database");
+const database = process.env.DATABASE_URL ? require("./database-postgres") : require("./database");
 
 const root = __dirname;
 const distRoot = path.join(root, "dist");
@@ -36,7 +36,6 @@ const adminEmail = requiredEnv("ADMIN_EMAIL");
 const adminPasswordHash = requiredEnv("ADMIN_PASSWORD_HASH");
 const publicBaseUrl = process.env.PUBLIC_BASE_URL || `http://${host}:${port}`;
 const sessionSecret = requiredEnv("SESSION_SECRET");
-const adminSessions = new Set();
 const MIN_ORDER_VALUE = 20;
 const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_FEE = 4.99;
@@ -237,10 +236,10 @@ function companyEmail() {
   return process.env.COMPANY_EMAIL || process.env.ADMIN_EMAIL || adminEmail;
 }
 
-function customerActionNotification({ type, title, body, order = null, customer = null }) {
+async function customerActionNotification({ type, title, body, order = null, customer = null }) {
   const orderId = order?.id || "";
   const customerEmail = customer?.email || order?.customer?.email || order?.customerEmail || "";
-  database.createAdminNotification({ type, title, body, orderId, customerEmail });
+  await database.createAdminNotification({ type, title, body, orderId, customerEmail });
   return sendEmail(companyEmail(), `Idukki Spices admin: ${title}`, [
     title,
     "",
@@ -440,9 +439,42 @@ function bearerToken(req) {
 }
 
 function requireAdmin(req, res) {
-  if (adminSessions.has(bearerToken(req))) return true;
+  const token = bearerToken(req);
+  const [payload, signature] = token.split(".");
+  const expected = payload ? crypto.createHmac("sha256", sessionSecret).update(`admin:${payload}`).digest("base64url") : "";
+  if (payload && signature && safeEqual(signature, expected)) {
+    try {
+      const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+      if (session.role === "admin" && session.exp > Date.now()) return true;
+    } catch {}
+  }
   sendJson(res, 401, { error: "Admin login required" });
   return false;
+}
+
+function signAdminToken() {
+  const payload = Buffer.from(JSON.stringify({ role: "admin", exp: Date.now() + 1000 * 60 * 60 * 12 })).toString("base64url");
+  const signature = crypto.createHmac("sha256", sessionSecret).update(`admin:${payload}`).digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+const rateBuckets = new Map();
+function allowRequest(req, pathname) {
+  const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  const ip = forwarded || req.socket.remoteAddress || "unknown";
+  const sensitive = pathname.includes("/login") || pathname.includes("request-otp") || pathname.includes("verify-otp");
+  const readOnly = req.method === "GET" || req.method === "HEAD";
+  const limit = sensitive ? 15 : readOnly ? 10_000 : 180;
+  const windowMs = 60_000;
+  const key = `${ip}:${sensitive ? "auth" : readOnly ? "read" : "write"}`;
+  const current = rateBuckets.get(key);
+  const timestamp = Date.now();
+  if (!current || timestamp - current.startedAt >= windowMs) {
+    rateBuckets.set(key, { count: 1, startedAt: timestamp });
+    return true;
+  }
+  current.count += 1;
+  return current.count <= limit;
 }
 
 function signCustomerToken(email) {
@@ -482,7 +514,31 @@ async function postForm(url, body, headers = {}) {
   return data;
 }
 
-async function sendEmail(to, subject, body, attachments = []) {
+const emailQueue = [];
+let activeEmails = 0;
+const EMAIL_CONCURRENCY = Math.max(1, Number(process.env.EMAIL_CONCURRENCY || 4));
+
+function drainEmailQueue() {
+  while (activeEmails < EMAIL_CONCURRENCY && emailQueue.length) {
+    const job = emailQueue.shift();
+    activeEmails += 1;
+    sendEmailNow(...job.args)
+      .then(job.resolve, job.reject)
+      .finally(() => {
+        activeEmails -= 1;
+        drainEmailQueue();
+      });
+  }
+}
+
+function sendEmail(...args) {
+  return new Promise((resolve, reject) => {
+    emailQueue.push({ args, resolve, reject });
+    drainEmailQueue();
+  });
+}
+
+async function sendEmailNow(to, subject, body, attachments = []) {
   if (!process.env.SENDGRID_API_KEY) {
     return { sent: false, setupRequired: "SENDGRID_API_KEY" };
   }
@@ -565,7 +621,8 @@ async function createStripeCheckout(order) {
     params[`line_items[${index}][price_data][product_data][name]`] = "Shipping";
   }
   return postForm("https://api.stripe.com/v1/checkout/sessions", params, {
-    Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`
+    Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+    "Idempotency-Key": `checkout-${order.id}`
   });
 }
 
@@ -607,7 +664,7 @@ function verifyStripeWebhook(rawBody, signatureHeader) {
 }
 
 async function confirmPaidOrder(orderId, paymentDetails = {}) {
-  const updated = database.updateOrderPaymentStatus(orderId, "Paid", paymentDetails);
+  const updated = await database.updateOrderPaymentStatus(orderId, "Paid", paymentDetails);
   if (!updated) return null;
   if (updated.confirmationEmailSent) {
     return { order: updated, emailResult: { skipped: true, reason: "already-sent" } };
@@ -625,7 +682,7 @@ async function confirmPaidOrder(orderId, paymentDetails = {}) {
     body: `${updated.customer?.name || "Customer"} paid for order ${updated.id} (€${Number(updated.total || 0).toFixed(2)}).`,
     order: updated
   });
-  const confirmed = database.updateOrderPaymentStatus(updated.id, "Paid", {
+  const confirmed = await database.updateOrderPaymentStatus(updated.id, "Paid", {
     ...paymentDetails,
     confirmationEmailSent: true,
     confirmationEmailSentAt: new Date().toISOString(),
@@ -667,8 +724,7 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/admin/login" && req.method === "POST") {
     const body = await readBody(req);
     if (body?.email === adminEmail && verifyPassword(body?.password, adminPasswordHash)) {
-      const token = crypto.randomBytes(32).toString("hex");
-      adminSessions.add(token);
+      const token = signAdminToken();
       return sendJson(res, 200, {
         ok: true,
         token,
@@ -681,13 +737,13 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/admin/notifications") {
     if (!requireAdmin(req, res)) return;
     if (req.method === "GET") {
-      return sendJson(res, 200, database.getAdminNotifications(30));
+      return sendJson(res, 200, await database.getAdminNotifications(30));
     }
     if (req.method === "PUT") {
-      return sendJson(res, 200, database.markAdminNotificationsRead());
+      return sendJson(res, 200, await database.markAdminNotificationsRead());
     }
     if (req.method === "DELETE") {
-      return sendJson(res, 200, database.clearAdminNotifications());
+      return sendJson(res, 200, await database.clearAdminNotifications());
     }
   }
 
@@ -701,8 +757,8 @@ async function handleApi(req, res, url) {
       if (!name) return sendJson(res, 400, { error: "Name is required." });
       if (!validEmail(email)) return sendJson(res, 400, { error: "Enter a valid email address." });
       if (messageText.length < 5) return sendJson(res, 400, { error: "Message is too short." });
-      const message = database.createContactMessage({ name, email, phone, message: messageText });
-      database.createAdminNotification({
+      const message = await database.createContactMessage({ name, email, phone, message: messageText });
+      await database.createAdminNotification({
         type: "contact-message",
         title: "New contact message",
         body: `${name} sent a message: ${messageText.slice(0, 160)}${messageText.length > 160 ? "..." : ""}`,
@@ -722,14 +778,14 @@ async function handleApi(req, res, url) {
       return sendJson(res, 201, message);
     }
     if (!requireAdmin(req, res)) return;
-    if (req.method === "GET") return sendJson(res, 200, database.getContactMessages());
+    if (req.method === "GET") return sendJson(res, 200, await database.getContactMessages());
     if (req.method === "PUT") {
       const body = await readBody(req);
       const id = String(body?.id || "");
       const status = String(body?.status || "");
       if (!id) return sendJson(res, 400, { error: "Message id is required." });
       if (!["New", "Read", "Replied"].includes(status)) return sendJson(res, 400, { error: "Invalid message status." });
-      const updated = database.updateContactMessage(id, { status });
+      const updated = await database.updateContactMessage(id, { status });
       if (!updated) return sendJson(res, 404, { error: "Message not found." });
       return sendJson(res, 200, updated);
     }
@@ -742,7 +798,7 @@ async function handleApi(req, res, url) {
     const replyText = String(body?.message || "").trim();
     if (!id) return sendJson(res, 400, { error: "Message id is required." });
     if (replyText.length < 5) return sendJson(res, 400, { error: "Reply message is too short." });
-    const message = database.getContactMessages().find((item) => item.id === id);
+    const message = (await database.getContactMessages()).find((item) => item.id === id);
     if (!message) return sendJson(res, 404, { error: "Message not found." });
     const emailResult = await sendEmail(
       message.email,
@@ -761,7 +817,7 @@ async function handleApi(req, res, url) {
     if (!emailResult.sent) {
       return sendJson(res, 503, { error: `Email provider is not configured: ${emailResult.setupRequired || "unknown"}` });
     }
-    const updated = database.updateContactMessage(id, { status: "Replied" });
+    const updated = await database.updateContactMessage(id, { status: "Replied" });
     return sendJson(res, 200, { message: updated, email: emailResult });
   }
 
@@ -772,7 +828,7 @@ async function handleApi(req, res, url) {
     if (invalidPhone) return sendJson(res, 400, { error: invalidPhone });
     body.email = normalizeEmail(body.email);
     body.phone = normalizePhone(body.phone);
-    const account = database.registerCustomer(body);
+    const account = await database.registerCustomer(body);
     await customerActionNotification({
       type: "account-created",
       title: "New customer account",
@@ -792,23 +848,23 @@ async function handleApi(req, res, url) {
       const invalidPhone = phoneError(identity);
       if (invalidPhone) return sendJson(res, 400, { error: invalidPhone });
     }
-    const account = database.getCustomerByIdentity(identity);
+    const account = await database.getCustomerByIdentity(identity);
     if (!account) return sendJson(res, 404, { error: "No account found" });
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const expiresAt = Date.now() + 5 * 60 * 1000;
-    database.saveOtpChallenge({ purpose: "login", identity, email: account.email, codeHash: otpHash(code), expiresAt });
+    await database.saveOtpChallenge({ purpose: "login", identity, email: account.email, codeHash: otpHash(code), expiresAt });
     const message = `Your Idukki Spices OTP is ${code}. It expires in 5 minutes.`;
     try {
       const result = body.method === "phone"
         ? await sendSms(normalizePhone(account.phone || identity), message)
         : await sendEmail(account.email, "Your Idukki Spices OTP", message);
       if (!result.sent) {
-        database.deleteOtpChallenge("login", identity);
+        await database.deleteOtpChallenge("login", identity);
         return sendJson(res, 503, { error: "OTP provider is not configured", setupRequired: result.setupRequired });
       }
       return sendJson(res, 200, { ok: true, sent: true, channel: body.method });
     } catch (error) {
-      database.deleteOtpChallenge("login", identity);
+      await database.deleteOtpChallenge("login", identity);
       return sendJson(res, 502, { error: error.message });
     }
   }
@@ -816,24 +872,24 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/auth/verify-otp" && req.method === "POST") {
     const body = await readBody(req);
     const identity = normalizeAuthIdentity(body.identity, body.method);
-    const challenge = database.getOtpChallenge("login", identity);
+    const challenge = await database.getOtpChallenge("login", identity);
     if (!challenge || Number(challenge.expiresAt || 0) < Date.now()) {
-      if (challenge) database.deleteOtpChallenge("login", identity);
+      if (challenge) await database.deleteOtpChallenge("login", identity);
       return sendJson(res, 400, { error: "OTP expired or missing. Please send a new OTP and try again." });
     }
     if (!safeEqual(otpHash(body.otp), challenge.codeHash, "hex")) return sendJson(res, 401, { error: "OTP is incorrect" });
-    database.deleteOtpChallenge("login", identity);
+    await database.deleteOtpChallenge("login", identity);
     const token = signCustomerToken(challenge.email);
-    return sendJson(res, 200, { ok: true, email: challenge.email, token, account: database.getCustomerByIdentity(challenge.email) });
+    return sendJson(res, 200, { ok: true, email: challenge.email, token, account: await database.getCustomerByIdentity(challenge.email) });
   }
 
   if (url.pathname === "/api/account/orders" && req.method === "GET") {
     const email = customerEmailFromToken(req);
     if (!email) return sendJson(res, 401, { error: "Account login required" });
-    const account = database.getCustomerByIdentity(email);
+    const account = await database.getCustomerByIdentity(email);
     if (!account) return sendJson(res, 404, { error: "Account not found" });
     const accountCreatedAt = Date.parse(account.createdAt || "");
-    return sendJson(res, 200, database.getOrders().filter((order) => {
+    return sendJson(res, 200, (await database.getOrders()).filter((order) => {
       if (!isConfirmedOrder(order)) return false;
       if (order.customerId) return order.customerId === account.id;
       const orderCreatedAt = Date.parse(order.createdAt || "");
@@ -847,10 +903,10 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/account/orders/action" && req.method === "POST") {
     const email = customerEmailFromToken(req);
     if (!email) return sendJson(res, 401, { error: "Account login required" });
-    const account = database.getCustomerByIdentity(email);
+    const account = await database.getCustomerByIdentity(email);
     if (!account) return sendJson(res, 404, { error: "Account not found" });
     const body = await readBody(req);
-    const order = database.getOrderById(body?.orderId);
+    const order = await database.getOrderById(body?.orderId);
     if (!order) return sendJson(res, 404, { error: "Order not found" });
     const accountCreatedAt = Date.parse(account.createdAt || "");
     const orderCreatedAt = Date.parse(order.createdAt || "");
@@ -868,7 +924,7 @@ async function handleApi(req, res, url) {
         return sendJson(res, 409, { error: "This order is already packed and cannot be cancelled." });
       }
       if (status === "Cancelled") return sendJson(res, 200, order);
-      const updated = database.updateOrder(order.id, { deliveryStatus: "Cancelled", cancelledAt: new Date().toISOString() });
+      const updated = await database.updateOrder(order.id, { deliveryStatus: "Cancelled", cancelledAt: new Date().toISOString() });
       const emailResult = await sendOrderNotification(updated, "cancelled");
       await customerActionNotification({
         type: "order-cancelled",
@@ -876,7 +932,7 @@ async function handleApi(req, res, url) {
         body: `${updated.customer?.name || "Customer"} cancelled order ${updated.id}.`,
         order: updated
       });
-      const notified = database.updateOrder(updated.id, {
+      const notified = await database.updateOrder(updated.id, {
         cancellationEmailSentAt: new Date().toISOString(),
         cancellationEmailResult: emailResult
       });
@@ -890,7 +946,7 @@ async function handleApi(req, res, url) {
       if (order.paymentStatus !== "Paid") {
         return sendJson(res, 409, { error: "Refund is available only for paid orders." });
       }
-      const updated = database.updateOrder(order.id, { paymentStatus: "Refund requested", refundRequestedAt: new Date().toISOString() });
+      const updated = await database.updateOrder(order.id, { paymentStatus: "Refund requested", refundRequestedAt: new Date().toISOString() });
       const emailResult = await sendOrderNotification(updated, "refundRequested");
       await customerActionNotification({
         type: "refund-requested",
@@ -898,7 +954,7 @@ async function handleApi(req, res, url) {
         body: `${updated.customer?.name || "Customer"} requested a refund for order ${updated.id}.`,
         order: updated
       });
-      const notified = database.updateOrder(updated.id, {
+      const notified = await database.updateOrder(updated.id, {
         refundRequestEmailSentAt: new Date().toISOString(),
         refundRequestEmailResult: emailResult
       });
@@ -911,7 +967,7 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/account/profile" && req.method === "GET") {
     const email = customerEmailFromToken(req);
     if (!email) return sendJson(res, 401, { error: "Account login required" });
-    const account = database.getCustomerByIdentity(email);
+    const account = await database.getCustomerByIdentity(email);
     if (!account) return sendJson(res, 404, { error: "Account not found" });
     return sendJson(res, 200, account);
   }
@@ -922,7 +978,7 @@ async function handleApi(req, res, url) {
     const body = await readBody(req);
     const invalidPhone = body?.phone ? phoneError(body.phone) : "";
     if (invalidPhone) return sendJson(res, 400, { error: invalidPhone });
-    const updated = database.updateCustomerByEmail(email, {
+    const updated = await database.updateCustomerByEmail(email, {
       name: String(body?.name || "").trim(),
       phone: body?.phone ? normalizePhone(body.phone) : "",
       address: String(body?.address || "").trim()
@@ -940,22 +996,22 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/account/deactivation-otp" && req.method === "POST") {
     const email = customerEmailFromToken(req);
     if (!email) return sendJson(res, 401, { error: "Account login required" });
-    const account = database.getCustomerByIdentity(email);
+    const account = await database.getCustomerByIdentity(email);
     if (!account) return sendJson(res, 404, { error: "Account not found" });
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const identity = normalizeEmail(email);
     const expiresAt = Date.now() + 5 * 60 * 1000;
-    database.saveOtpChallenge({ purpose: "deactivate", identity, email: identity, codeHash: otpHash(code), expiresAt });
+    await database.saveOtpChallenge({ purpose: "deactivate", identity, email: identity, codeHash: otpHash(code), expiresAt });
     const message = `Votre code OTP Idukki Spices pour désactiver le compte est ${code}. Il expire dans 5 minutes.`;
     try {
       const result = await sendEmail(account.email, "Code OTP de désactivation Idukki Spices", message);
       if (!result.sent) {
-        database.deleteOtpChallenge("deactivate", identity);
+        await database.deleteOtpChallenge("deactivate", identity);
         return sendJson(res, 503, { error: "OTP provider is not configured", setupRequired: result.setupRequired });
       }
       return sendJson(res, 200, { ok: true, sent: true });
     } catch (error) {
-      database.deleteOtpChallenge("deactivate", identity);
+      await database.deleteOtpChallenge("deactivate", identity);
       return sendJson(res, 502, { error: error.message });
     }
   }
@@ -965,15 +1021,15 @@ async function handleApi(req, res, url) {
     if (!email) return sendJson(res, 401, { error: "Account login required" });
     const body = await readBody(req);
     const identity = normalizeEmail(email);
-    const challenge = database.getOtpChallenge("deactivate", identity);
+    const challenge = await database.getOtpChallenge("deactivate", identity);
     if (!challenge || Number(challenge.expiresAt || 0) < Date.now()) {
-      if (challenge) database.deleteOtpChallenge("deactivate", identity);
+      if (challenge) await database.deleteOtpChallenge("deactivate", identity);
       return sendJson(res, 400, { error: "OTP expired or missing. Please send a new OTP and try again." });
     }
     if (!safeEqual(otpHash(body?.otp), challenge.codeHash, "hex")) return sendJson(res, 401, { error: "OTP is incorrect" });
-    const deleted = database.deleteCustomerByEmail(email);
+    const deleted = await database.deleteCustomerByEmail(email);
     if (!deleted) return sendJson(res, 404, { error: "Account not found" });
-    database.deleteOtpChallenge("deactivate", identity);
+    await database.deleteOtpChallenge("deactivate", identity);
     await customerActionNotification({
       type: "account-deactivated",
       title: "Customer account deactivated",
@@ -984,7 +1040,7 @@ async function handleApi(req, res, url) {
   }
 
   if (url.pathname === "/api/order-status" && req.method === "GET") {
-    const order = database.getOrderById(url.searchParams.get("id"));
+    const order = await database.getOrderById(url.searchParams.get("id"));
     if (!order) return sendJson(res, 404, { error: "Order not found" });
     return sendJson(res, 200, {
       id: order.id,
@@ -999,7 +1055,7 @@ async function handleApi(req, res, url) {
 
   if (url.pathname === "/api/invoice" && req.method === "GET") {
     if (!requireAdmin(req, res)) return;
-    const order = database.getOrderById(url.searchParams.get("id"));
+    const order = await database.getOrderById(url.searchParams.get("id"));
     if (!order) return sendJson(res, 404, { error: "Order not found" });
     return sendJson(res, 200, order);
   }
@@ -1016,7 +1072,7 @@ async function handleApi(req, res, url) {
       if (!confirmed) return sendJson(res, 404, { error: "Order not found" });
       return sendJson(res, 200, { ok: true, order: confirmed.order, emailResult: confirmed.emailResult });
     } catch (error) {
-      const updated = database.updateOrderPaymentStatus(orderId, "Paid");
+      const updated = await database.updateOrderPaymentStatus(orderId, "Paid");
       return sendJson(res, 200, { ok: true, order: updated, warning: error.message });
     }
   }
@@ -1042,24 +1098,24 @@ async function handleApi(req, res, url) {
   }
 
   if (url.pathname === "/api/products") {
-    if (req.method === "GET") return sendJson(res, 200, database.getProducts());
+    if (req.method === "GET") return sendJson(res, 200, await database.getProducts());
     if (req.method === "PUT") {
       if (!requireAdmin(req, res)) return;
       const body = await readBody(req);
-      return sendJson(res, 200, database.saveProducts(Array.isArray(body) ? body : []));
+      return sendJson(res, 200, await database.saveProducts(Array.isArray(body) ? body : []));
     }
   }
 
   if (url.pathname === "/api/orders") {
     if (req.method === "GET") {
       if (!requireAdmin(req, res)) return;
-      return sendJson(res, 200, database.getOrders().filter(isConfirmedOrder));
+      return sendJson(res, 200, (await database.getOrders()).filter(isConfirmedOrder));
     }
     if (req.method === "DELETE") {
       if (!requireAdmin(req, res)) return;
       const id = String(url.searchParams.get("id") || "");
       if (!id) return sendJson(res, 400, { error: "Order id is required" });
-      const deleted = database.deleteOrderById(id);
+      const deleted = await database.deleteOrderById(id);
       if (!deleted) return sendJson(res, 404, { error: "Order not found" });
       return sendJson(res, 200, { ok: true, id });
     }
@@ -1067,33 +1123,45 @@ async function handleApi(req, res, url) {
       if (!requireAdmin(req, res)) return;
       const body = await readBody(req);
       const incomingOrders = Array.isArray(body) ? body : [];
-      const previousOrders = new Map(database.getOrders().map((order) => [order.id, order]));
-      database.saveOrders(incomingOrders);
+      const previousOrders = new Map((await database.getOrders()).map((order) => [order.id, order]));
+      await database.saveOrders(incomingOrders);
       for (const order of incomingOrders) {
         const previous = previousOrders.get(order.id);
         const previousStatus = previous?.deliveryStatus || "New order";
         const nextStatus = order.deliveryStatus || "New order";
         const notificationType = previousStatus !== nextStatus ? deliveryNotificationType(nextStatus) : "";
         if (!notificationType) continue;
-        const savedOrder = database.getOrderById(order.id);
+        const savedOrder = await database.getOrderById(order.id);
         const emailResult = await sendOrderNotification(savedOrder, notificationType);
-        database.updateOrder(order.id, {
+        await database.updateOrder(order.id, {
           [`${notificationType}EmailSentAt`]: new Date().toISOString(),
           [`${notificationType}EmailResult`]: emailResult
         });
       }
-      return sendJson(res, 200, database.getOrders());
+      return sendJson(res, 200, await database.getOrders());
     }
     if (req.method === "POST") {
       const incomingOrder = await readBody(req);
-      const charges = calculateOrderCharges(incomingOrder?.items || []);
+      const catalog = new Map((await database.getProducts()).map((product) => [product.id, product]));
+      const requestedItems = Array.isArray(incomingOrder?.items) ? incomingOrder.items : [];
+      const validatedItems = [];
+      for (const requested of requestedItems) {
+        const product = catalog.get(String(requested?.id || ""));
+        const qty = Number(requested?.qty);
+        if (!product || !Number.isInteger(qty) || qty < 1 || qty > 99 || qty > Number(product.stock || 0)) {
+          return sendJson(res, 400, { error: "One or more cart items are invalid or unavailable." });
+        }
+        validatedItems.push({ id: product.id, name: product.name, qty, price: Number(product.price), image: product.image });
+      }
+      const charges = calculateOrderCharges(validatedItems);
       if (charges.subtotal < MIN_ORDER_VALUE) {
         return sendJson(res, 400, { error: "Minimum order value is €20." });
       }
-      const savedOrder = database.saveOrder({ ...incomingOrder, ...charges });
+      const orderId = `IDK-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+      const savedOrder = await database.saveOrder({ ...incomingOrder, id: orderId, items: validatedItems, ...charges });
       try {
         const stripeSession = await createStripeCheckout(savedOrder);
-        database.updateOrder(savedOrder.id, { stripeSessionId: stripeSession.id || "" });
+        await database.updateOrder(savedOrder.id, { stripeSessionId: stripeSession.id || "" });
         return sendJson(res, 201, { ...savedOrder, stripeSession });
       } catch (error) {
         return sendJson(res, 201, { ...savedOrder, warning: error.message });
@@ -1104,7 +1172,7 @@ async function handleApi(req, res, url) {
   if (url.pathname === "/api/orders/refund" && req.method === "POST") {
     if (!requireAdmin(req, res)) return;
     const body = await readBody(req);
-    const order = database.getOrderById(body?.orderId);
+    const order = await database.getOrderById(body?.orderId);
     if (!order) return sendJson(res, 404, { error: "Order not found" });
     if (order.deliveryStatus !== "Cancelled") {
       return sendJson(res, 409, { error: "Refund can be approved only after the order is cancelled." });
@@ -1114,14 +1182,14 @@ async function handleApi(req, res, url) {
     }
     try {
       const refund = await createStripeRefund(order);
-      const updated = database.updateOrder(order.id, {
+      const updated = await database.updateOrder(order.id, {
         paymentStatus: "Refunded",
         refundApprovedAt: new Date().toISOString(),
         stripeRefundId: refund.id,
         refundResult: refund
       });
       const emailResult = await sendOrderNotification(updated, "refundCredited");
-      const notified = database.updateOrder(updated.id, {
+      const notified = await database.updateOrder(updated.id, {
         refundCreditedEmailSentAt: new Date().toISOString(),
         refundCreditedEmailResult: emailResult
       });
@@ -1133,23 +1201,23 @@ async function handleApi(req, res, url) {
 
   if (url.pathname === "/api/customers") {
     if (!requireAdmin(req, res)) return;
-    if (req.method === "GET") return sendJson(res, 200, database.getCustomers());
+    if (req.method === "GET") return sendJson(res, 200, await database.getCustomers());
     if (req.method === "DELETE") {
       const id = String(url.searchParams.get("id") || "");
       if (!id) return sendJson(res, 400, { error: "Customer id is required" });
-      const deleted = database.deleteCustomerById(id);
+      const deleted = await database.deleteCustomerById(id);
       if (!deleted) return sendJson(res, 404, { error: "Customer account not found" });
       return sendJson(res, 200, { ok: true, id });
     }
     if (req.method === "PUT") {
       const body = await readBody(req);
-      return sendJson(res, 200, database.saveCustomers(Array.isArray(body) ? body : []));
+      return sendJson(res, 200, await database.saveCustomers(Array.isArray(body) ? body : []));
     }
   }
 
   if (url.pathname === "/api/email-outbox" && req.method === "GET") {
     if (!requireAdmin(req, res)) return;
-    return sendJson(res, 200, database.getOutbox());
+    return sendJson(res, 200, await database.getOutbox());
   }
 
   return sendJson(res, 404, { error: "Not found" });
@@ -1180,23 +1248,39 @@ function serveStatic(req, res, url) {
       res.end("Not found");
       return;
     }
-    res.writeHead(200, { "Content-Type": mimeTypes[path.extname(filePath)] || "application/octet-stream" });
+    const extension = path.extname(filePath);
+    const immutable = [".jpg", ".jpeg", ".png", ".webp", ".svg", ".css", ".js"].includes(extension);
+    res.writeHead(200, {
+      "Content-Type": mimeTypes[extension] || "application/octet-stream",
+      "Cache-Control": immutable ? "public, max-age=31536000, immutable" : "public, max-age=300"
+    });
     res.end(content);
   });
 }
 
-database.initDatabase();
-
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   try {
-    if (url.pathname.startsWith("/api/")) return await handleApi(req, res, url);
+    if (url.pathname.startsWith("/api/")) {
+      if (!allowRequest(req, url.pathname)) return sendJson(res, 429, { error: "Too many requests. Please try again shortly." });
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Referrer-Policy", "same-origin");
+      return await handleApi(req, res, url);
+    }
     serveStatic(req, res, url);
   } catch (error) {
     sendJson(res, error.statusCode || 500, { error: error.statusCode ? error.message : "Server error", detail: error.message });
   }
 });
 
-server.listen(port, host, () => {
-  console.log(`Idukki Spices running at http://${host}:${port}`);
+async function startServer() {
+  await database.initDatabase();
+  server.listen(port, host, () => {
+    console.log(`Idukki Spices running at http://${host}:${port}`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error("Failed to initialize server:", error.message);
+  process.exitCode = 1;
 });

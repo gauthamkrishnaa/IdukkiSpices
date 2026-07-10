@@ -5,17 +5,17 @@ services:
     plan: starter
     buildCommand: npm ci && npm run build
     startCommand: npm start
-    disk:
-      name: idukki-spices-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
       - key: HOST
         value: 0.0.0.0
-      - key: DATA_DIR
-        value: /var/data
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_POOL_MAX
+        value: 10
+      - key: EMAIL_CONCURRENCY
+        value: 4
       - key: PUBLIC_BASE_URL
         sync: false
       - key: SESSION_SECRET
