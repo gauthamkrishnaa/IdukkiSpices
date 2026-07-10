@@ -322,6 +322,7 @@ main {
 .brand {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
   gap: 10px;
   border: 0;
   background: transparent;
@@ -331,6 +332,7 @@ main {
 }
 
 .brand img {
+  flex: 0 0 54px;
   width: 54px;
   height: 42px;
   border-radius: 10px;
@@ -3884,18 +3886,20 @@ h3 {
   }
 
   .brand {
+    flex: 0 0 auto;
     gap: 7px;
   }
 
   .brand img {
-    width: 46px;
-    height: 38px;
+    flex-basis: 54px;
+    width: 54px;
+    height: 42px;
   }
 
   .brand span {
-    max-width: 58px;
-    font-size: 0.78rem;
-    line-height: 1.05;
+    width: 70px;
+    font-size: 0.86rem;
+    line-height: 1.08;
   }
 
   .mobile-header-actions {
@@ -3911,6 +3915,12 @@ h3 {
   .mobile-menu-button {
     width: 40px;
     min-height: 40px;
+  }
+}
+
+@media (max-width: 360px) {
+  .topbar > .brand span {
+    display: none;
   }
 }
 
