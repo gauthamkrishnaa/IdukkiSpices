@@ -762,6 +762,7 @@ async function handleApi(req, res, url) {
         type: "contact-message",
         title: "New contact message",
         body: `${name} sent a message: ${messageText.slice(0, 160)}${messageText.length > 160 ? "..." : ""}`,
+        orderId: message.id,
         customerEmail: email
       });
       await sendEmail(companyEmail(), `Idukki Spices contact: ${name}`, [
@@ -787,6 +788,9 @@ async function handleApi(req, res, url) {
       if (!["New", "Read", "Replied"].includes(status)) return sendJson(res, 400, { error: "Invalid message status." });
       const updated = await database.updateContactMessage(id, { status });
       if (!updated) return sendJson(res, 404, { error: "Message not found." });
+      if (status === "Read" || status === "Replied") {
+        await database.markContactNotificationRead(updated.id, updated.email);
+      }
       return sendJson(res, 200, updated);
     }
   }
@@ -818,6 +822,7 @@ async function handleApi(req, res, url) {
       return sendJson(res, 503, { error: `Email provider is not configured: ${emailResult.setupRequired || "unknown"}` });
     }
     const updated = await database.updateContactMessage(id, { status: "Replied" });
+    await database.markContactNotificationRead(updated.id, updated.email);
     return sendJson(res, 200, { message: updated, email: emailResult });
   }
 

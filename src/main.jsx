@@ -2319,6 +2319,8 @@ function Admin({ products, setProducts }) {
   const [notifications, setNotifications] = useState([]);
   const [messages, setMessages] = useState([]);
   const [note, setNote] = useState("");
+  const [toast, setToast] = useState(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("overview");
   const [activeOrderStatus, setActiveOrderStatus] = useState("New order");
 
@@ -2336,6 +2338,12 @@ function Admin({ products, setProducts }) {
     }
   };
   useEffect(() => { loadAdmin(); }, [token]);
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = window.setTimeout(() => setToast(null), 3200);
+    return () => window.clearTimeout(timer);
+  }, [toast?.id]);
+  const showAdminToast = (message, type = "success") => setToast({ id: Date.now(), message, type });
 
   const login = async (event) => {
     event.preventDefault();
@@ -2388,9 +2396,9 @@ function Admin({ products, setProducts }) {
     try {
       await api(`/api/orders?id=${encodeURIComponent(order.id)}`, { method: "DELETE" });
       setOrders((current) => current.filter((item) => item.id !== order.id));
-      setNote(`Order ${order.id} deleted.`);
+      showAdminToast(`Order ${order.id} deleted.`);
     } catch (error) {
-      setNote(error.message);
+      showAdminToast(error.message, "error");
     }
   };
   const deleteCustomer = async (customer) => {
@@ -2399,9 +2407,9 @@ function Admin({ products, setProducts }) {
     try {
       await api(`/api/customers?id=${encodeURIComponent(customer.id)}`, { method: "DELETE" });
       setCustomers((current) => current.filter((item) => item.id !== customer.id));
-      setNote(`Account ${customer.email} deleted.`);
+      showAdminToast(`Account ${customer.email} deleted.`);
     } catch (error) {
-      setNote(error.message);
+      showAdminToast(error.message, "error");
     }
   };
   const approveRefund = async (order) => {
@@ -2410,16 +2418,17 @@ function Admin({ products, setProducts }) {
     try {
       const updated = await api("/api/orders/refund", { method: "POST", body: JSON.stringify({ orderId: order.id }) });
       setOrders((current) => current.map((item) => item.id === updated.id ? updated : item));
-      setNote(`Refund approved for ${order.id}.`);
+      showAdminToast(`Refund approved for ${order.id}.`);
     } catch (error) {
-      setNote(error.message);
+      showAdminToast(error.message, "error");
     }
   };
   const markNotificationsRead = async () => {
     try {
       setNotifications(await api("/api/admin/notifications", { method: "PUT" }));
+      showAdminToast("Notifications marked as read.");
     } catch (error) {
-      setNote(error.message);
+      showAdminToast(error.message, "error");
     }
   };
   const clearNotifications = async () => {
@@ -2427,18 +2436,19 @@ function Admin({ products, setProducts }) {
     if (!ok) return;
     try {
       setNotifications(await api("/api/admin/notifications", { method: "DELETE" }));
-      setNote("Admin notifications cleared.");
+      showAdminToast("Admin notifications cleared.");
     } catch (error) {
-      setNote(error.message);
+      showAdminToast(error.message, "error");
     }
   };
   const updateMessageStatus = async (message, status) => {
     try {
       const updated = await api("/api/contact-messages", { method: "PUT", body: JSON.stringify({ id: message.id, status }) });
       setMessages((current) => current.map((item) => item.id === updated.id ? updated : item));
-      setNote(`Message marked ${status.toLowerCase()}.`);
+      if (status === "Read" || status === "Replied") setNotifications(await api("/api/admin/notifications"));
+      showAdminToast(`Message marked ${status.toLowerCase()}.`);
     } catch (error) {
-      setNote(error.message);
+      showAdminToast(error.message, "error");
     }
   };
   const sendMessageReply = async (message, replyText) => {
@@ -2447,7 +2457,8 @@ function Admin({ products, setProducts }) {
       body: JSON.stringify({ id: message.id, message: replyText })
     });
     setMessages((current) => current.map((item) => item.id === result.message.id ? result.message : item));
-    setNote(`Reply sent to ${message.email} from the Idukki Spices email.`);
+    setNotifications(await api("/api/admin/notifications"));
+    showAdminToast(`Reply sent to ${message.email}.`);
   };
 
   return (
@@ -2471,9 +2482,26 @@ function Admin({ products, setProducts }) {
       <section className="admin-workspace">
         <div className="admin-head">
           <SectionTitle eyebrow="Operations" title={adminTabs.find(([id]) => id === activeSection)?.[1] || "Overview"} />
+          <div className="admin-notification-menu">
+            <button className={`admin-notification-trigger ${notifications.some((item) => !Number(item.isRead ?? item.read)) ? "has-unread" : ""}`} onClick={() => setNotificationsOpen((open) => !open)} type="button" aria-expanded={notificationsOpen} aria-label="Admin notifications">
+              <Bell size={21} />
+              {notifications.some((item) => !Number(item.isRead ?? item.read)) && <b>{notifications.filter((item) => !Number(item.isRead ?? item.read)).length}</b>}
+            </button>
+            {notificationsOpen && (
+              <div className="admin-notification-popover">
+                <AdminNotificationBar notifications={notifications} onMarkRead={markNotificationsRead} onClear={clearNotifications} />
+              </div>
+            )}
+          </div>
         </div>
-        {activeSection === "overview" && <AdminNotificationBar notifications={notifications} onMarkRead={markNotificationsRead} onClear={clearNotifications} />}
         {note && <p className="notice compact">{note}</p>}
+        {toast && (
+          <div className={`admin-toast ${toast.type}`} role="status" aria-live="polite">
+            {toast.type === "success" ? <CheckCircle2 size={21} /> : <X size={21} />}
+            <span>{toast.message}</span>
+            <button onClick={() => setToast(null)} type="button" aria-label="Dismiss notification"><X size={16} /></button>
+          </div>
+        )}
         {activeSection === "overview" && (
           <section className="admin-section-stack">
             <div className="stat-grid">
@@ -2516,7 +2544,7 @@ function Admin({ products, setProducts }) {
                   </header>
                   <div className="admin-order-scroll">
                     {visibleOrders.length ? visibleOrders.map((order) => (
-                      <AdminOrderRow key={order.id} order={order} orders={orders} setOrders={setOrders} onDelete={deleteOrder} onApproveRefund={approveRefund} />
+                      <AdminOrderRow key={order.id} order={order} orders={orders} setOrders={setOrders} onDelete={deleteOrder} onApproveRefund={approveRefund} onFeedback={showAdminToast} />
                     )) : <p className="muted">No orders in this status.</p>}
                   </div>
                 </section>
@@ -2534,7 +2562,7 @@ function Admin({ products, setProducts }) {
               <span>Stock count</span>
               <span>Action</span>
             </div>
-            {products.map((product) => <ProductAdminRow key={product.id} product={product} setProducts={setProducts} />)}
+            {products.map((product) => <ProductAdminRow key={product.id} product={product} setProducts={setProducts} onFeedback={showAdminToast} />)}
           </section>
         )}
         {activeSection === "accounts" && (
@@ -2639,7 +2667,7 @@ function AdminContactMessage({ message, onReply, onStatus }) {
 }
 
 function AdminNotificationBar({ notifications, onMarkRead, onClear }) {
-  const unread = notifications.filter((item) => !Number(item.isRead)).length;
+  const unread = notifications.filter((item) => !Number(item.isRead ?? item.read)).length;
   return (
     <section className="admin-notification-bar">
       <div className="notification-bar-head">
@@ -2649,7 +2677,7 @@ function AdminNotificationBar({ notifications, onMarkRead, onClear }) {
           {unread > 0 && <span>{unread} new</span>}
         </div>
         <div className="notification-actions">
-          <button className="ghost small" disabled={!notifications.length || unread === 0} onClick={onMarkRead} type="button">Mark read</button>
+          <button className="ghost small" disabled={!notifications.length || unread === 0} onClick={onMarkRead} type="button">Mark all read</button>
           <button className="ghost small danger-link" disabled={!notifications.length} onClick={onClear} type="button">Clear</button>
         </div>
       </div>
@@ -2663,7 +2691,7 @@ function AdminNotificationBar({ notifications, onMarkRead, onClear }) {
               minute: "2-digit"
             }) : "";
             return (
-              <article className={Number(item.isRead) ? "" : "unread"} key={item.id}>
+              <article className={Number(item.isRead ?? item.read) ? "" : "unread"} key={item.id}>
                 <div>
                   <strong>{item.title}</strong>
                   <p>{item.body}</p>
@@ -2678,10 +2706,9 @@ function AdminNotificationBar({ notifications, onMarkRead, onClear }) {
   );
 }
 
-function AdminOrderRow({ order, orders, setOrders, onDelete, onApproveRefund }) {
+function AdminOrderRow({ order, orders, setOrders, onDelete, onApproveRefund, onFeedback }) {
   const [paymentStatus, setPaymentStatus] = useState(order.paymentStatus || "Pending");
   const [deliveryStatus, setDeliveryStatus] = useState(order.deliveryStatus || "New order");
-  const [saved, setSaved] = useState("");
   const orderedAt = order.createdAt ? new Date(order.createdAt).toLocaleString(undefined, {
     day: "2-digit",
     month: "short",
@@ -2690,11 +2717,14 @@ function AdminOrderRow({ order, orders, setOrders, onDelete, onApproveRefund }) 
     minute: "2-digit"
   }) : "Date not available";
   const save = async () => {
-    const next = orders.map((item) => item.id === order.id ? { ...item, paymentStatus, deliveryStatus } : item);
-    const updated = await api("/api/orders", { method: "PUT", body: JSON.stringify(next) });
-    setOrders(updated);
-    setSaved("Updated");
-    window.setTimeout(() => setSaved(""), 1600);
+    try {
+      const next = orders.map((item) => item.id === order.id ? { ...item, paymentStatus, deliveryStatus } : item);
+      const updated = await api("/api/orders", { method: "PUT", body: JSON.stringify(next) });
+      setOrders(updated);
+      onFeedback?.(`Order ${order.id} updated successfully.`);
+    } catch (error) {
+      onFeedback?.(error.message, "error");
+    }
   };
   return (
     <article className="admin-order">
@@ -2730,19 +2760,23 @@ function AdminOrderRow({ order, orders, setOrders, onDelete, onApproveRefund }) 
         )}
         <button className="danger-button small" onClick={() => onDelete(order)} type="button">Delete</button>
       </div>
-      {saved && <p className="notice compact">{saved}</p>}
     </article>
   );
 }
 
-function ProductAdminRow({ product, setProducts }) {
+function ProductAdminRow({ product, setProducts, onFeedback }) {
   const [price, setPrice] = useState(product.price);
   const [stock, setStock] = useState(product.stock);
   const save = async () => {
-    const products = await api("/api/products");
-    const next = products.map((item) => item.id === product.id ? { ...item, price: Number(price), stock: Number(stock) } : item);
-    const saved = await api("/api/products", { method: "PUT", body: JSON.stringify(next) });
-    setProducts(saved);
+    try {
+      const products = await api("/api/products");
+      const next = products.map((item) => item.id === product.id ? { ...item, price: Number(price), stock: Number(stock) } : item);
+      const saved = await api("/api/products", { method: "PUT", body: JSON.stringify(next) });
+      setProducts(saved);
+      onFeedback?.(`${product.name} updated: €${Number(price).toFixed(2)}, stock ${Number(stock)}.`);
+    } catch (error) {
+      onFeedback?.(error.message, "error");
+    }
   };
   return (
     <div className="admin-product">

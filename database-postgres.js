@@ -165,6 +165,18 @@ async function markAdminNotificationsRead() {
   return getAdminNotifications();
 }
 
+async function markContactNotificationRead(messageId, customerEmail = "") {
+  const notifications = await list("notifications");
+  const normalizedEmail = String(customerEmail).toLowerCase();
+  await Promise.all(notifications.map((item) => {
+    const linked = item.type === "contact-message" && (
+      item.orderId === messageId || (!item.orderId && String(item.customerEmail || "").toLowerCase() === normalizedEmail)
+    );
+    return linked ? put("notifications", item.id, { ...item, read: true, isRead: 1 }) : Promise.resolve(item);
+  }));
+  return getAdminNotifications();
+}
+
 async function clearAdminNotifications() {
   await pool.query("DELETE FROM app_records WHERE collection = 'notifications'");
   return [];
@@ -200,6 +212,6 @@ module.exports = {
   registerCustomer, updateCustomerByEmail, deleteCustomerByEmail, deleteCustomerById,
   saveCustomers, saveOtpChallenge, getOtpChallenge, deleteOtpChallenge,
   createAdminNotification, getAdminNotifications, markAdminNotificationsRead,
-  clearAdminNotifications, createContactMessage, getContactMessages, updateContactMessage,
+  markContactNotificationRead, clearAdminNotifications, createContactMessage, getContactMessages, updateContactMessage,
   createConfirmation, getOutbox, saveOrder
 };

@@ -3002,6 +3002,102 @@ h3 {
   padding: 34px 0 56px;
 }
 
+.admin-notification-menu {
+  position: relative;
+  z-index: 30;
+}
+
+.admin-notification-trigger {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  min-height: 48px;
+  border: 1px solid rgba(47, 111, 68, 0.18);
+  border-radius: 999px;
+  background: #fffaf2;
+  color: var(--leaf-dark);
+  box-shadow: 0 12px 28px rgba(36, 29, 23, 0.1);
+}
+
+.admin-notification-trigger.has-unread {
+  background: var(--leaf-dark);
+  color: #fff;
+}
+
+.admin-notification-trigger b {
+  position: absolute;
+  top: -6px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 5px;
+  border: 2px solid #f4ecdf;
+  border-radius: 999px;
+  background: #c34732;
+  color: #fff;
+  font-size: 0.7rem;
+}
+
+.admin-notification-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(520px, calc(100vw - 40px));
+  border-radius: 18px;
+  background: #fffaf2;
+  box-shadow: 0 26px 70px rgba(36, 29, 23, 0.24);
+}
+
+.admin-notification-popover .admin-notification-bar {
+  margin: 0;
+  background: #fffaf2;
+  box-shadow: none;
+}
+
+.admin-toast {
+  position: fixed;
+  top: 22px;
+  right: 22px;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 14px 15px;
+  border: 1px solid rgba(47, 111, 68, 0.24);
+  border-radius: 16px;
+  background: #eff8ed;
+  color: #17472b;
+  box-shadow: 0 22px 55px rgba(36, 29, 23, 0.22);
+  font-weight: 850;
+  animation: cartToastIn 0.25s ease-out both;
+}
+
+.admin-toast.error {
+  border-color: rgba(167, 54, 45, 0.25);
+  background: #fff0ec;
+  color: #8b2d1a;
+}
+
+.admin-toast span {
+  flex: 1;
+}
+
+.admin-toast > button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: currentColor;
+}
+
 .admin-notification-bar {
   display: grid;
   gap: 12px;
@@ -3925,6 +4021,19 @@ h3 {
 }
 
 @media (max-width: 640px) {
+  .admin-notification-popover {
+    position: fixed;
+    top: 78px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+
+  .admin-toast {
+    top: 14px;
+    right: 14px;
+  }
+
   .topbar {
     align-items: center;
     flex-direction: row;

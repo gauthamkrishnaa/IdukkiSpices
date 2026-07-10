@@ -402,6 +402,19 @@ function markAdminNotificationsRead() {
   return getAdminNotifications();
 }
 
+function markContactNotificationRead(messageId, customerEmail = "") {
+  run(`
+    UPDATE admin_notifications
+    SET is_read = 1
+    WHERE type = 'contact-message'
+      AND (
+        order_id = ${sqlValue(messageId)}
+        OR (order_id = '' AND customer_email = ${sqlValue(String(customerEmail).toLowerCase())})
+      );
+  `);
+  return getAdminNotifications();
+}
+
 function clearAdminNotifications() {
   run("DELETE FROM admin_notifications;");
   return [];
@@ -577,6 +590,7 @@ module.exports = {
   createAdminNotification,
   getAdminNotifications,
   markAdminNotificationsRead,
+  markContactNotificationRead,
   clearAdminNotifications,
   createContactMessage,
   getContactMessages,
