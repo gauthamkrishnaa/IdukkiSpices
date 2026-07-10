@@ -367,6 +367,49 @@ nav {
   margin-left: auto;
 }
 
+.mobile-cart-link {
+  position: relative;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  min-height: 42px;
+  border: 1px solid rgba(47, 111, 68, 0.18);
+  border-radius: 999px;
+  background: #fffaf2;
+  color: var(--leaf-dark);
+  box-shadow: 0 10px 24px rgba(36, 29, 23, 0.08);
+  text-decoration: none;
+}
+
+.mobile-cart-link b {
+  position: absolute;
+  top: -5px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border: 2px solid #fffaf2;
+  border-radius: 999px;
+  background: var(--leaf);
+  color: #fff;
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.mobile-cart-link.active {
+  background: var(--leaf);
+  color: #fff;
+}
+
+:root[data-theme="dark"] .mobile-cart-link {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: #18251d;
+  color: #fff8ea;
+}
+
 .mobile-language {
   display: none;
 }
@@ -688,7 +731,7 @@ nav b {
   border-radius: 24px;
   background:
     linear-gradient(145deg, rgba(35, 65, 42, 0.93), rgba(111, 68, 34, 0.82)),
-    url("/assets/idukki-plantation-wide.png") center / cover;
+    url("/assets/idukki-plantation-wide.jpg") center / cover;
   color: #fff;
   box-shadow: var(--shadow);
   display: flex;
@@ -2900,7 +2943,7 @@ h3 {
   padding: 26px;
   background:
     linear-gradient(180deg, rgba(36, 29, 23, 0.94), rgba(47, 74, 45, 0.92)),
-    url("/assets/idukki-plantation-wide.png") center / cover;
+    url("/assets/idukki-plantation-wide.jpg") center / cover;
   color: #fff;
 }
 
@@ -3786,6 +3829,11 @@ h3 {
     display: inline-flex;
   }
 
+  .mobile-cart-link {
+    display: inline-flex;
+    flex: 0 0 auto;
+  }
+
   .mobile-language {
     display: inline-grid;
   }
@@ -3826,6 +3874,43 @@ h3 {
 
   .brand span {
     font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    gap: 7px;
+    padding-inline: 10px;
+  }
+
+  .brand {
+    gap: 7px;
+  }
+
+  .brand img {
+    width: 46px;
+    height: 38px;
+  }
+
+  .brand span {
+    max-width: 58px;
+    font-size: 0.78rem;
+    line-height: 1.05;
+  }
+
+  .mobile-header-actions {
+    gap: 4px;
+  }
+
+  .mobile-language button {
+    min-width: 31px;
+    padding-inline: 7px;
+  }
+
+  .mobile-cart-link,
+  .mobile-menu-button {
+    width: 40px;
+    min-height: 40px;
   }
 }
 

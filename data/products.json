@@ -7,7 +7,7 @@
     "art": "cardamom",
     "category": "whole",
     "stock": 28,
-    "image": "assets/product-green-cardamom-pack.png",
+    "image": "assets/product-green-cardamom-pack.jpg",
     "uses": "Special graded 7mm pods, best for tea, sweets, biryani, and festive rice.",
     "description": "Special graded 7mm Idukki green cardamom pods with a bright aroma for tea, desserts, biryani, and slow-cooked curries."
   },
@@ -19,7 +19,7 @@
     "art": "cardamom",
     "category": "whole",
     "stock": 24,
-    "image": "assets/product-green-cardamom-pack.png",
+    "image": "assets/product-green-cardamom-pack.jpg",
     "uses": "Special graded 7mm pods, best for regular tea drinkers and family cooking.",
     "description": "A larger pack of special graded 7mm green cardamom pods with bright aroma and deep natural sweetness."
   },
@@ -31,7 +31,7 @@
     "art": "mix",
     "category": "blend",
     "stock": 18,
-    "image": "assets/product-mixed-spices-pack.png",
+    "image": "assets/product-mixed-spices-pack.jpg",
     "uses": "Best for everyday curries, marinades, and roasted dishes.",
     "description": "A balanced blend for everyday cooking, roasted dishes, marinades, and festive meals."
   },
@@ -43,7 +43,7 @@
     "art": "pepper",
     "category": "whole",
     "stock": 20,
-    "image": "assets/product-black-pepper-pack.png",
+    "image": "assets/product-black-pepper-pack.jpg",
     "uses": "Best for finishing curries, soups, eggs, and grilled dishes.",
     "description": "Bold peppercorns with sharp heat and a clean finish."
   },
@@ -55,7 +55,7 @@
     "art": "clove",
     "category": "whole",
     "stock": 20,
-    "image": "assets/product-cloves-pack.png",
+    "image": "assets/product-cloves-pack.jpg",
     "uses": "Best for spice blends, rice, pickles, and warm drinks.",
     "description": "Warm, intense cloves for spice blends, sweets, teas, and pickles."
   },
@@ -67,7 +67,7 @@
     "art": "cinnamon",
     "category": "whole",
     "stock": 25,
-    "image": "assets/product-cinnamon-pack.png",
+    "image": "assets/product-cinnamon-pack.jpg",
     "uses": "Best for baking, tea, desserts, and slow-cooked sauces.",
     "description": "Sweet, woody cinnamon for baking, drinks, and slow simmered dishes."
   },
@@ -79,7 +79,7 @@
     "art": "star",
     "category": "whole",
     "stock": 16,
-    "image": "assets/product-star-anise-pack.png",
+    "image": "assets/product-star-anise-pack.jpg",
     "uses": "Best for broths, biryani, masala blends, and slow cooking.",
     "description": "Beautiful star anise with licorice-like warmth for broths and masalas."
   },
@@ -91,7 +91,7 @@
     "art": "bay",
     "category": "leaf",
     "stock": 21,
-    "image": "assets/product-bay-leaves-pack.png",
+    "image": "assets/product-bay-leaves-pack.jpg",
     "uses": "Best for soups, rice, stews, and curries.",
     "description": "Dried bay leaves that add gentle herbal depth to soups, rice, and curries."
   }

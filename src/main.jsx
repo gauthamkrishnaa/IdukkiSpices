@@ -33,15 +33,17 @@ import aboutHeroCardamomKerala from "../assets/about-hero-cardamom-kerala.png";
 import aboutProductBowls from "../assets/about-product-bowls.png";
 import aboutProductsPouches from "../assets/about-products-pouches.png";
 import aboutStorySpicePlate from "../assets/about-story-spice-plate.png";
-import homeSlideBayLeaves from "../assets/home-slide-bay-leaves.png";
-import homeSlideStarAnise from "../assets/home-slide-star-anise.png";
-import homeSlideCloves from "../assets/home-slide-cloves.png";
-import homeSlideCardamom from "../assets/home-slide-cardamom.png";
-import homeSlideCinnamon from "../assets/home-slide-cinnamon.png";
-import homeSlideBlackPepper from "../assets/home-slide-black-pepper.png";
-import homeSlideMixedSpices from "../assets/home-slide-mixed-spices.png";
+import homeSlideBayLeaves from "../assets/home-slide-bay-leaves.jpg";
+import homeSlideStarAnise from "../assets/home-slide-star-anise.jpg";
+import homeSlideCloves from "../assets/home-slide-cloves.jpg";
+import homeSlideCardamom from "../assets/home-slide-cardamom.jpg";
+import homeSlideCinnamon from "../assets/home-slide-cinnamon.jpg";
+import homeSlideBlackPepper from "../assets/home-slide-black-pepper.jpg";
+import homeSlideMixedSpices from "../assets/home-slide-mixed-spices.jpg";
 
 const money = (value) => `€${Number(value || 0).toFixed(2)}`;
+const optimizedProductPath = (image = "") => String(image).replace(/(assets\/product-[^/]+-pack)\.png$/, "$1.jpg");
+const productImageSrc = (image) => `/${optimizedProductPath(image).replace(/^\//, "")}`;
 const MIN_ORDER_VALUE = 20;
 const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_FEE = 4.99;
@@ -160,13 +162,13 @@ const seoPages = {
     title: "Shop Kerala Spices | Idukki Spices",
     description: "Buy special graded 7mm green cardamom, mixed spices, black pepper, cloves, cinnamon, star anise, and bay leaves from Idukki Spices.",
     path: "/shop.html",
-    image: "/assets/product-mixed-spices-pack.png"
+    image: "/assets/product-mixed-spices-pack.jpg"
   },
   cart: {
     title: "Cart | Idukki Spices",
     description: "Review your Idukki Spices cart, shipping charges, and secure checkout total.",
     path: "/cart.html",
-    image: "/assets/product-mixed-spices-pack.png"
+    image: "/assets/product-mixed-spices-pack.jpg"
   },
   contact: {
     title: "Contact Idukki Spices | Orders and Support",
@@ -214,7 +216,7 @@ const seoPages = {
     title: "Secure Checkout | Idukki Spices",
     description: "Complete your Idukki Spices order with secure online payment.",
     path: "/checkout.html",
-    image: "/assets/product-mixed-spices-pack.png"
+    image: "/assets/product-mixed-spices-pack.jpg"
   },
   "payment-success": {
     title: "Payment Successful | Idukki Spices",
@@ -286,7 +288,7 @@ const updateSeo = (page, products) => {
           "@type": "Product",
           name: product.name,
           description: product.description,
-          image: new URL(`/${product.image}`, siteUrl).href,
+          image: new URL(productImageSrc(product.image), siteUrl).href,
           brand: { "@type": "Brand", name: "Idukki Spices" },
           offers: {
             "@type": "Offer",
@@ -937,7 +939,7 @@ function App() {
 function Header({ go, page, cartCount, customer, lang, setLang, notifications = [], onOpenNotifications, onClearNotifications }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const links = [["index", "Home"], ["about", "About"], ["shop", "Shop"], ["cart", "Cart"], ["contact", "Contact"], ["auth", customer ? "My account" : "Login"]];
-  const mobileLinks = [["auth", customer ? "My account" : "Login"], ["index", "Home"], ["about", "About"], ["shop", "Shop"], ["cart", "Cart"], ["contact", "Contact"]];
+  const mobileLinks = [["auth", customer ? "My account" : "Login"], ["index", "Home"], ["about", "About"], ["shop", "Shop"], ["contact", "Contact"]];
   const pathFor = (id) => id === "index" ? "/" : `/${id}.html`;
   const follow = (event, id) => {
     event.preventDefault();
@@ -974,6 +976,10 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
       </a>
       {navLinks("desktop-nav")}
       <div className="mobile-header-actions">
+        <a className={`mobile-cart-link ${page === "cart" ? "active" : ""}`} href="/cart.html" onClick={(event) => follow(event, "cart")} aria-label={`${lang === "fr" ? "Panier" : "Cart"}: ${cartCount}`}>
+          <ShoppingBag size={21} />
+          <b>{cartCount}</b>
+        </a>
         {customer && (
           <CustomerNotificationBell
             notifications={notifications}
@@ -1061,7 +1067,7 @@ function Hero({ go }) {
         </div>
       </div>
       <div className="hero-media">
-        <img src="/assets/product-mixed-spices-pack.png" alt="Idukki Spices mixed spice pack" />
+        <img src="/assets/product-mixed-spices-pack.jpg" alt="Idukki Spices mixed spice pack" width="1448" height="1086" fetchPriority="high" decoding="async" />
         <div className="floating-proof"><ShieldCheck size={20} /> Secure online checkout</div>
       </div>
     </section>
@@ -1137,6 +1143,8 @@ function SpiceJourney({ go }) {
               src={image.src}
               alt={index < cinemaImages.length ? image.alt : ""}
               aria-hidden={index >= cinemaImages.length ? "true" : undefined}
+              loading={index === 0 ? "eager" : "lazy"}
+              decoding="async"
               key={`${image.src}-${index}`}
             />
           ))}
@@ -1480,12 +1488,12 @@ function About({ lang = "fr" }) {
   const reasonIcons = [<Leaf size={24} />, <Sparkles size={24} />, <Package size={24} />, <ShieldCheck size={24} />];
   const reasons = copy.reasons.map((reason, index) => ({ ...reason, icon: reasonIcons[index] }));
   const productImages = [
-    "/assets/product-green-cardamom-pack.png",
-    "/assets/product-black-pepper-pack.png",
-    "/assets/product-cloves-pack.png",
-    "/assets/product-cinnamon-pack.png",
-    "/assets/product-bay-leaves-pack.png",
-    "/assets/product-star-anise-pack.png"
+    "/assets/product-green-cardamom-pack.jpg",
+    "/assets/product-black-pepper-pack.jpg",
+    "/assets/product-cloves-pack.jpg",
+    "/assets/product-cinnamon-pack.jpg",
+    "/assets/product-bay-leaves-pack.jpg",
+    "/assets/product-star-anise-pack.jpg"
   ];
   const productHighlights = copy.products.map((name, index) => ({ name, image: productImages[index] }));
   const plantationImages = [plantationFlowerPods, plantationPath, plantationStoneWall, plantationBlossomClose];
@@ -1617,7 +1625,7 @@ function Contact() {
           <h1>Need help with an order or product?</h1>
           <p>Questions, delivery help, product details, or business orders. Send a message and we will reply as soon as possible.</p>
         </div>
-        <img src="/assets/idukki-plantation-wide.png" alt="Idukki spice plantation" />
+        <img src="/assets/idukki-plantation-wide.jpg" alt="Idukki spice plantation" loading="lazy" decoding="async" />
       </section>
       <section className="section contact-grid">
         <div className="contact-details">
@@ -1724,7 +1732,7 @@ function ProductCard({ product, cart, addToCart, onView, lang }) {
   return (
     <article className="product-card" onClick={() => onView?.(product)}>
       <button className="product-image-button" type="button" onClick={() => onView?.(product)}>
-        <img src={`/${product.image}`} alt={displayProduct.name} />
+        <img src={productImageSrc(product.image)} alt={displayProduct.name} loading="lazy" decoding="async" />
       </button>
       <div className="product-copy">
         <p className="pill">{displayProduct.category || "spice"}</p>
@@ -1765,7 +1773,7 @@ function QuickView({ product, cart, addToCart, onClose, lang }) {
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <article className="quick-view" role="dialog" aria-modal="true" aria-label={displayProduct.name} onClick={(event) => event.stopPropagation()}>
         <button className="modal-close" type="button" onClick={onClose}>Close</button>
-        <img src={`/${product.image}`} alt={displayProduct.name} />
+        <img src={productImageSrc(product.image)} alt={displayProduct.name} decoding="async" />
         <div>
           <p className="pill">{displayProduct.category || "spice"}</p>
           <h2>{displayProduct.name}</h2>
@@ -1802,7 +1810,7 @@ function Cart({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, addT
           const displayItem = localizeProduct(item, lang);
           return (
             <article className="cart-line" key={item.id}>
-              <img src={`/${item.image}`} alt={displayItem.name} />
+              <img src={productImageSrc(item.image)} alt={displayItem.name} loading="lazy" decoding="async" />
               <div><h3>{displayItem.name}</h3><p>{item.qty} x {money(item.price)}</p></div>
               <div className="counter">
                 <button onClick={() => addToCart(item.id, -1)} type="button">-</button>
@@ -2738,7 +2746,7 @@ function ProductAdminRow({ product, setProducts }) {
   };
   return (
     <div className="admin-product">
-      <img src={`/${product.image}`} alt={product.name} />
+      <img src={productImageSrc(product.image)} alt={product.name} loading="lazy" decoding="async" />
       <strong>{product.name}</strong>
       <label><span>Price (€)</span><input aria-label={`${product.name} price in euros`} value={price} onChange={(e) => setPrice(e.target.value)} type="number" /></label>
       <label><span>Stock</span><input aria-label={`${product.name} stock count`} value={stock} onChange={(e) => setStock(e.target.value)} type="number" /></label>
@@ -2907,7 +2915,7 @@ function OrderCard({ order, detailed = false, lang, onCancel, onRefund }) {
         <div className="order-items">
           {(order.items || []).map((item) => (
             <div key={`${order.id}-${item.id || item.name}`} className="order-item">
-              {item.image && <img src={`/${item.image}`} alt={localizeProduct(item, lang).name} />}
+              {item.image && <img src={productImageSrc(item.image)} alt={localizeProduct(item, lang).name} loading="lazy" decoding="async" />}
               <div>
                 <strong>{localizeProduct(item, lang).name}</strong>
                 <p>{item.qty} x {money(item.price)} = {money(Number(item.qty || 0) * Number(item.price || 0))}</p>
