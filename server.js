@@ -544,23 +544,35 @@ async function sendEmailNow(to, subject, body, attachments = []) {
   if (!process.env.SENDGRID_API_KEY) {
     return { sent: false, setupRequired: "SENDGRID_API_KEY" };
   }
+  const logoPath = path.join(root, "assets", "idukki-spices-logo.jpeg");
+  const emailAttachments = [...attachments];
+  if (fs.existsSync(logoPath)) {
+    emailAttachments.push({
+      filename: "idukki-spices-logo.jpeg",
+      content: fs.readFileSync(logoPath),
+      type: "image/jpeg",
+      disposition: "inline",
+      contentId: "idukki-spices-logo"
+    });
+  }
   const payload = {
     personalizations: [{ to: [{ email: to }] }],
     from: parseEmailAddress(process.env.EMAIL_FROM || "Idukki Spices <idukkispicesfr@gmail.com>"),
     subject,
     content: [
       { type: "text/plain", value: body },
-      { type: "text/html", value: renderBrandedEmail({ subject, body, baseUrl: publicBaseUrl }) }
+      { type: "text/html", value: renderBrandedEmail({ subject, body, baseUrl: publicBaseUrl, logoSrc: "cid:idukki-spices-logo" }) }
     ]
   };
-  if (attachments.length) {
-    payload.attachments = attachments.map((attachment) => ({
+  if (emailAttachments.length) {
+    payload.attachments = emailAttachments.map((attachment) => ({
       filename: attachment.filename,
       content: Buffer.isBuffer(attachment.content)
         ? attachment.content.toString("base64")
         : Buffer.from(String(attachment.content || "")).toString("base64"),
-      type: "application/pdf",
-      disposition: "attachment"
+      type: attachment.type || "application/pdf",
+      disposition: attachment.disposition || "attachment",
+      ...(attachment.contentId ? { content_id: attachment.contentId } : {})
     }));
   }
   const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
@@ -863,11 +875,21 @@ async function handleApi(req, res, url) {
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const expiresAt = Date.now() + 5 * 60 * 1000;
     await database.saveOtpChallenge({ purpose: "login", identity, email: account.email, codeHash: otpHash(code), expiresAt });
-    const message = `Your Idukki Spices OTP is ${code}. It expires in 5 minutes.`;
+    const smsMessage = `Votre code de connexion Idukki Spices est ${code}. Il expire dans 5 minutes.`;
+    const emailMessage = [
+      `Bonjour ${account.name || ""},`,
+      "",
+      "Voici votre code de connexion Idukki Spices :",
+      "",
+      code,
+      "",
+      "Ce code expire dans 5 minutes.",
+      "Ne partagez jamais ce code. Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail."
+    ].join("\n");
     try {
       const result = body.method === "phone"
-        ? await sendSms(normalizePhone(account.phone || identity), message)
-        : await sendEmail(account.email, "Your Idukki Spices OTP", message);
+        ? await sendSms(normalizePhone(account.phone || identity), smsMessage)
+        : await sendEmail(account.email, "Votre code de connexion Idukki Spices", emailMessage);
       if (!result.sent) {
         await database.deleteOtpChallenge("login", identity);
         return sendJson(res, 503, { error: "OTP provider is not configured", setupRequired: result.setupRequired });
@@ -1012,7 +1034,16 @@ async function handleApi(req, res, url) {
     const identity = normalizeEmail(email);
     const expiresAt = Date.now() + 5 * 60 * 1000;
     await database.saveOtpChallenge({ purpose: "deactivate", identity, email: identity, codeHash: otpHash(code), expiresAt });
-    const message = `Votre code OTP Idukki Spices pour désactiver le compte est ${code}. Il expire dans 5 minutes.`;
+    const message = [
+      `Bonjour ${account.name || ""},`,
+      "",
+      "Voici le code demandé pour désactiver votre compte Idukki Spices :",
+      "",
+      code,
+      "",
+      "Ce code expire dans 5 minutes.",
+      "Ne partagez jamais ce code. Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail."
+    ].join("\n");
     try {
       const result = await sendEmail(account.email, "Code OTP de désactivation Idukki Spices", message);
       if (!result.sent) {

@@ -29,8 +29,8 @@ const samples = [
   {
     id: "otp",
     label: "Security code",
-    subject: "Your Idukki Spices OTP",
-    body: ["Hello Claire,", "", "Use this one-time code to sign in to your Idukki Spices account:", "", "482913", "", "This code expires shortly. If you did not request it, you can ignore this email."].join("\n")
+    subject: "Votre code de connexion Idukki Spices",
+    body: ["Bonjour Claire,", "", "Voici votre code de connexion Idukki Spices :", "", "482913", "", "Ce code expire dans 5 minutes.", "Ne partagez jamais ce code. Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail."].join("\n")
   },
   {
     id: "admin",

@@ -42,6 +42,10 @@ function formatBody(body) {
       return;
     }
     closeList();
+    if (/^\d{6}$/.test(line)) {
+      blocks.push(`<div style="margin:14px 0;padding:16px;border:1px solid #c9d7dd;border-radius:12px;background:#eef4f6;color:#254e61;font-size:30px;font-weight:700;letter-spacing:9px;text-align:center">${escapeHtml(line)}</div>`);
+      return;
+    }
     const isTotal = /^(total|montant remboursé|montant concerné|sous-total|livraison|facture|commande|order)/i.test(line);
     if (isTotal && line.includes(":")) {
       const split = line.indexOf(":");
@@ -54,9 +58,15 @@ function formatBody(body) {
   return blocks.join("");
 }
 
-function renderBrandedEmail({ subject, body, baseUrl }) {
+function renderBrandedEmail({ subject, body, baseUrl, logoSrc }) {
   const safeBaseUrl = String(baseUrl || "https://idukkispices.com").replace(/\/$/, "");
+  const safeLogoSrc = escapeHtml(logoSrc || `${safeBaseUrl}/assets/idukki-spices-logo.jpeg`);
   const theme = emailTheme(subject);
+  const loweredSubject = String(subject || "").toLowerCase();
+  const isSecurityEmail = loweredSubject.includes("code") || loweredSubject.includes("otp");
+  const cta = loweredSubject.includes("admin")
+    ? { href: `${safeBaseUrl}/admin.html`, label: "Ouvrir le tableau de bord" }
+    : { href: `${safeBaseUrl}/account.html`, label: "Voir mon compte" };
   const preheader = escapeHtml(String(body || "").split(/\r?\n/).find((line) => line.trim()) || subject);
   return `<!doctype html>
 <html lang="fr">
@@ -70,7 +80,7 @@ function renderBrandedEmail({ subject, body, baseUrl }) {
         <tr><td style="padding:28px 34px 20px">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
             <tr>
-              <td align="left"><img src="${safeBaseUrl}/assets/idukki-spices-logo.jpeg" width="106" alt="Idukki Spices" style="display:block;width:106px;max-width:100%;height:auto;border:0;border-radius:12px"></td>
+              <td align="left"><img src="${safeLogoSrc}" width="106" alt="Idukki Spices" style="display:block;width:106px;max-width:100%;height:auto;border:0;border-radius:12px"></td>
               <td align="right" style="vertical-align:middle"><span style="display:inline-block;padding:8px 12px;border-radius:999px;background:${theme.accent}18;color:${theme.accent};font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase">${theme.icon}&nbsp; ${theme.label}</span></td>
             </tr>
           </table>
@@ -82,9 +92,7 @@ function renderBrandedEmail({ subject, body, baseUrl }) {
           <div style="padding:22px;border:1px solid #e8e0d3;border-radius:16px;background:#ffffff">
             ${formatBody(body)}
           </div>
-          <div style="text-align:center;padding-top:24px">
-            <a href="${safeBaseUrl}/account.html" style="display:inline-block;padding:13px 22px;border-radius:999px;background:${theme.accent};color:#ffffff;text-decoration:none;font-size:14px;font-weight:700">Voir mon compte</a>
-          </div>
+          ${isSecurityEmail ? "" : `<div style="text-align:center;padding-top:24px"><a href="${cta.href}" style="display:inline-block;padding:13px 22px;border-radius:999px;background:${theme.accent};color:#ffffff;text-decoration:none;font-size:14px;font-weight:700">${cta.label}</a></div>`}
         </td></tr>
         <tr><td style="padding:22px 34px;background:#1f422b;color:#eef7ec;text-align:center">
           <strong style="display:block;margin-bottom:7px;font-size:15px">Idukki Spices</strong>
