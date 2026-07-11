@@ -1055,8 +1055,30 @@ function CustomerNotificationBell({ notifications, onOpen, onClear }) {
   );
 }
 
-function Hero({ go }) {
+function Hero({ go, lang }) {
   const heroRef = useRef(null);
+  const fr = lang === "fr";
+  const copy = fr ? {
+    origin: "Des hauts plateaux du Kerala",
+    title: "Un cardamome de caractère.",
+    intro: "Soigneusement calibré, fraîchement emballé et prêt à apporter le véritable arôme d’Idukki dans chaque cuisine.",
+    sealed: "Emballé à la source",
+    freshTitle: "Une fraîcheur visible.",
+    freshText: "Un cardamome vert premium protégé dans un sachet kraft refermable.",
+    finale: "L’arôme authentique du Kerala. Livré partout en France.",
+    shop: "Acheter des épices",
+    story: "Notre histoire"
+  } : {
+    origin: "From the high ranges of Kerala",
+    title: "Cardamom with character.",
+    intro: "Carefully graded, freshly packed, and made to bring Idukki's true aroma into every kitchen.",
+    sealed: "Sealed at the source",
+    freshTitle: "Freshness you can see.",
+    freshText: "Premium green cardamom protected inside a resealable kraft pouch.",
+    finale: "Pure Kerala aroma. Delivered across France.",
+    shop: "Shop spices",
+    story: "Our plantation story"
+  };
 
   useEffect(() => {
     const hero = heroRef.current;
@@ -1087,24 +1109,24 @@ function Hero({ go }) {
       <div className="cinematic-sticky">
         <div className="cinematic-glow" aria-hidden="true" />
         <div className="cinematic-copy cinematic-copy-one">
-          <p className="kicker">From the high ranges of Kerala</p>
-          <h1>Cardamom with character.</h1>
-          <p>Carefully graded, freshly packed, and made to bring Idukki's true aroma into every kitchen.</p>
+          <p className="kicker">{copy.origin}</p>
+          <h1>{copy.title}</h1>
+          <p>{copy.intro}</p>
         </div>
         <div className="cinematic-product" aria-label="Idukki Spices cardamom pouch">
           <div className="pouch-shadow" />
-          <img src={cardamomPouch3d} alt="Idukki Spices 50 gram cardamom pouch" width="1024" height="1536" fetchPriority="high" decoding="async" />
+          <img src={cardamomPouch3d} alt={fr ? "Sachet de cardamome Idukki Spices de 50 grammes" : "Idukki Spices 50 gram cardamom pouch"} width="1024" height="1536" fetchPriority="high" decoding="async" />
         </div>
         <div className="cinematic-copy cinematic-copy-two">
-          <p className="kicker">Sealed at the source</p>
-          <h2>Freshness you can see.</h2>
-          <p>Premium green cardamom protected inside a resealable kraft pouch.</p>
+          <p className="kicker">{copy.sealed}</p>
+          <h2>{copy.freshTitle}</h2>
+          <p>{copy.freshText}</p>
         </div>
         <div className="cinematic-finale">
-          <p>Pure Kerala aroma. Delivered across France.</p>
+          <p>{copy.finale}</p>
           <div className="hero-actions">
-            <button className="primary" onClick={() => go("shop")} type="button"><ShoppingBag size={18} /> Shop spices</button>
-            <button className="ghost" onClick={() => go("about")} type="button">Our plantation story <ChevronRight size={18} /></button>
+            <button className="primary" onClick={() => go("shop")} type="button"><ShoppingBag size={18} /> {copy.shop}</button>
+            <button className="ghost" onClick={() => go("about")} type="button">{copy.story} <ChevronRight size={18} /></button>
           </div>
         </div>
       </div>
@@ -1117,7 +1139,7 @@ function Home(props) {
   const [quickView, setQuickView] = useState(null);
   return (
     <main>
-      <Hero go={props.go} />
+      <Hero go={props.go} lang={props.lang} />
       <HomeDeliveryBanner go={props.go} lang={props.lang} />
       <SpiceJourney go={props.go} />
       <ShopByCategory go={props.go} />
