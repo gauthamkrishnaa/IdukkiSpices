@@ -2118,6 +2118,17 @@ h3 {
   gap: 16px;
 }
 
+.address-service-message {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 750;
+}
+
+.address-service-message.error {
+  color: #a33228;
+}
+
 .home-favourites-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: min(820px, 100%);

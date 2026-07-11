@@ -660,6 +660,7 @@ function useAddressSuggestions(value) {
         const params = new URLSearchParams({
           format: "jsonv2",
           addressdetails: "1",
+          countrycodes: "fr",
           limit: "5",
           q: query
         });
@@ -680,6 +681,11 @@ function useAddressSuggestions(value) {
     };
   }, [value]);
   return { suggestions, setSuggestions, loading };
+}
+
+function isFrenchDeliveryAddress(value) {
+  const address = String(value || "").trim();
+  return /\bfrance\b/i.test(address) || /\b(?:0[1-9]|[1-8]\d|9[0-5])\d{3}\b/.test(address);
 }
 
 function useScrollReveal(scopeKey) {
@@ -1961,6 +1967,11 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
     event.preventDefault();
     if (!cartItems.length) return setNote("Add products before checkout.");
     if (!canCheckout) return setNote("Add more spices to reach the €20 minimum order.");
+    if (!isFrenchDeliveryAddress(form.address)) {
+      return setNote(lang === "fr"
+        ? "Désolé, cette adresse n’est pas desservie. Nous livrons uniquement en France."
+        : "Sorry, this address is not serviceable. We currently deliver only within France.");
+    }
     const order = {
       id: `IDK-${Date.now().toString().slice(-6)}`,
       customer: form,
@@ -2000,7 +2011,7 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
         <Field label="Full name" value={form.name} onChange={(value) => update("name", value)} required />
         <Field label="Email" type="email" value={form.email} onChange={(value) => update("email", value)} required />
         <Field label="Phone number" type="tel" value={form.phone} onChange={(value) => update("phone", value)} placeholder="Phone number" required />
-        <AddressField value={form.address} onChange={(value) => update("address", value)} required />
+        <AddressField value={form.address} onChange={(value) => update("address", value)} required franceOnly lang={lang} />
         <p className="checkout-policy-note">
           {lang === "fr" ? "En continuant, vous acceptez nos " : "By continuing, you agree to our "}
           <a href="/terms.html">{lang === "fr" ? "conditions générales" : "terms and conditions"}</a>
@@ -3040,8 +3051,9 @@ function Field({ label, value, onChange, type = "text", placeholder = "", requir
   return <label className="field"><span>{label}</span><input value={value} onChange={(event) => onChange(event.target.value)} type={type} placeholder={placeholder} required={required} readOnly={readOnly} /></label>;
 }
 
-function AddressField({ value, onChange, required = false }) {
+function AddressField({ value, onChange, required = false, franceOnly = false, lang = "en" }) {
   const { suggestions, setSuggestions, loading } = useAddressSuggestions(value);
+  const unsupported = franceOnly && String(value || "").trim().length >= 5 && !isFrenchDeliveryAddress(value);
   const choose = (address) => {
     onChange(address);
     setSuggestions([]);
@@ -3058,6 +3070,13 @@ function AddressField({ value, onChange, required = false }) {
           required={required}
         />
       </div>
+      {franceOnly && (
+        <p className={unsupported ? "address-service-message error" : "address-service-message"}>
+          {unsupported
+            ? (lang === "fr" ? "Désolé, cette adresse n’est pas desservie. Livraison uniquement en France." : "Sorry, this address is not serviceable. Delivery is available only in France.")
+            : (lang === "fr" ? "Livraison disponible uniquement en France." : "Delivery is available only within France.")}
+        </p>
+      )}
       {(loading || suggestions.length > 0) && (
         <div className="address-suggestions">
           {loading && <p>Searching addresses...</p>}

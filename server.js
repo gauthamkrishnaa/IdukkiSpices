@@ -430,6 +430,11 @@ function phoneError(value) {
   return "";
 }
 
+function isFrenchDeliveryAddress(value) {
+  const address = String(value || "").trim();
+  return /\bfrance\b/i.test(address) || /\b(?:0[1-9]|[1-8]\d|9[0-5])\d{3}\b/.test(address);
+}
+
 function adminToken(req) {
   const header = req.headers.authorization || "";
   return header.startsWith("Bearer ") ? header.slice(7) : "";
@@ -1183,6 +1188,9 @@ async function handleApi(req, res, url) {
     }
     if (req.method === "POST") {
       const incomingOrder = await readBody(req);
+      if (!isFrenchDeliveryAddress(incomingOrder?.customer?.address)) {
+        return sendJson(res, 400, { error: "Sorry, this address is not serviceable. We currently deliver only within France." });
+      }
       const catalog = new Map((await database.getProducts()).map((product) => [product.id, product]));
       const requestedItems = Array.isArray(incomingOrder?.items) ? incomingOrder.items : [];
       const validatedItems = [];
