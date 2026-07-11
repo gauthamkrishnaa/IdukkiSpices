@@ -341,6 +341,47 @@ main {
   box-shadow: 0 10px 22px rgba(36, 29, 23, 0.12);
 }
 
+.brand-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  position: relative;
+  padding: 2px 0 3px 12px;
+  line-height: .88;
+  letter-spacing: -.045em;
+}
+
+.brand-wordmark::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(#d4a33f, #27633f);
+}
+
+.brand-wordmark strong {
+  color: var(--leaf-dark);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.28rem;
+  font-weight: 800;
+}
+
+.brand-wordmark em {
+  margin-top: 0;
+  color: #9b682d;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.28rem;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: .03em;
+}
+
+:root[data-theme="dark"] .brand-wordmark strong { color: #e2f2df; }
+:root[data-theme="dark"] .brand-wordmark em { color: #e5bd73; }
+
 nav {
   display: flex;
   align-items: center;
@@ -4305,9 +4346,16 @@ h3 {
   }
 
   .brand span {
-    width: 70px;
-    font-size: 0.86rem;
-    line-height: 1.08;
+    width: 76px;
+  }
+
+  .brand-wordmark strong {
+    font-size: 1.08rem;
+  }
+
+  .brand-wordmark em {
+    font-size: 1.08rem;
+    letter-spacing: .02em;
   }
 
   .mobile-header-actions {

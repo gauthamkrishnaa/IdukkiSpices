@@ -973,7 +973,7 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
     <header className="topbar">
       <a className="brand" href="/" onClick={(event) => follow(event, "index")}>
         <img src="/assets/idukki-spices-logo.jpeg" alt="Idukki Spices" />
-        <span>Idukki Spices</span>
+        <span className="brand-wordmark"><strong>Idukki</strong><em>Spices</em></span>
       </a>
       {navLinks("desktop-nav")}
       <div className="mobile-header-actions">
@@ -1002,7 +1002,7 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
             <div className="mobile-sidebar-head">
               <div className="brand compact-brand">
                 <img src="/assets/idukki-spices-logo.jpeg" alt="" />
-                <span>Idukki Spices</span>
+                <span className="brand-wordmark"><strong>Idukki</strong><em>Spices</em></span>
               </div>
               <button className="mobile-menu-button close" onClick={() => setMenuOpen(false)} type="button" aria-label="Close menu">
                 <X size={24} />
@@ -1135,7 +1135,7 @@ function Hero({ go, lang }) {
 }
 
 function Home(props) {
-  const featured = props.products.slice(0, 4);
+  const featured = props.products.filter((product) => ["green-cardamom-50", "mixed-spices-100"].includes(product.id));
   const [quickView, setQuickView] = useState(null);
   return (
     <main>
