@@ -215,9 +215,7 @@ function syncProductMarketingFromSeed() {
     BEGIN;
     ${products.map((product) => `
       UPDATE products
-      SET name = ${sqlValue(product.name)},
-          image = ${sqlValue(product.image)},
-          category = ${sqlValue(product.category)},
+      SET category = ${sqlValue(product.category)},
           uses = ${sqlValue(product.uses)},
           description = ${sqlValue(product.description)}
       WHERE id = ${sqlValue(product.id)};

@@ -88,7 +88,7 @@ async function initDatabase() {
     const byId = new Map(existing.map((product) => [product.id, product]));
     for (const seed of seeds) {
       const current = byId.get(seed.id);
-      if (current) await put("products", seed.id, { ...current, name: seed.name, image: seed.image, category: seed.category, uses: seed.uses, description: seed.description });
+      if (current) await put("products", seed.id, { ...current, category: seed.category, uses: seed.uses, description: seed.description });
     }
   }
 }

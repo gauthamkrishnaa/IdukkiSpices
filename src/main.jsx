@@ -45,7 +45,9 @@ import cardamomPouch3d from "../assets/scroll-3d/cardamom-pouch-3d.webp";
 const money = (value) => `€${Number(value || 0).toFixed(2)}`;
 const itemQuantity = (items = []) => items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
 const optimizedProductPath = (image = "") => String(image).replace(/(assets\/product-[^/]+-pack)\.png$/, "$1.jpg");
-const productImageSrc = (image) => `/${optimizedProductPath(image).replace(/^\//, "")}`;
+const productImageSrc = (image) => /^(?:data:|blob:|https?:)/i.test(String(image || ""))
+  ? String(image)
+  : `/${optimizedProductPath(image).replace(/^\//, "")}`;
 const MIN_ORDER_VALUE = 20;
 const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_FEE = 4.99;
@@ -2850,23 +2852,53 @@ function AdminOrderRow({ order, orders, setOrders, onDelete, onApproveRefund, on
 }
 
 function ProductAdminRow({ product, setProducts, onFeedback }) {
+  const [name, setName] = useState(product.name);
   const [price, setPrice] = useState(product.price);
   const [stock, setStock] = useState(product.stock);
+  const [image, setImage] = useState(product.image);
+  const [imageBusy, setImageBusy] = useState(false);
+  const chooseImage = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return onFeedback?.("Choose a valid image file.", "error");
+    try {
+      setImageBusy(true);
+      const source = await createImageBitmap(file);
+      const scale = Math.min(1, 720 / Math.max(source.width, source.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(source.width * scale));
+      canvas.height = Math.max(1, Math.round(source.height * scale));
+      canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
+      source.close();
+      setImage(canvas.toDataURL("image/webp", .78));
+      onFeedback?.("Photo ready. Click Save to publish it.");
+    } catch {
+      onFeedback?.("This photo could not be processed. Try a JPG, PNG, or WebP file.", "error");
+    } finally {
+      setImageBusy(false);
+      event.target.value = "";
+    }
+  };
   const save = async () => {
     try {
+      if (!name.trim()) return onFeedback?.("Product name is required.", "error");
       const products = await api("/api/products");
-      const next = products.map((item) => item.id === product.id ? { ...item, price: Number(price), stock: Number(stock) } : item);
+      const next = products.map((item) => item.id === product.id ? { ...item, name: name.trim(), image, price: Number(price), stock: Number(stock) } : item);
       const saved = await api("/api/products", { method: "PUT", body: JSON.stringify(next) });
       setProducts(saved);
-      onFeedback?.(`${product.name} updated: €${Number(price).toFixed(2)}, stock ${Number(stock)}.`);
+      onFeedback?.(`${name.trim()} updated successfully.`);
     } catch (error) {
       onFeedback?.(error.message, "error");
     }
   };
   return (
     <div className="admin-product">
-      <img src={productImageSrc(product.image)} alt={product.name} loading="lazy" decoding="async" />
-      <strong>{product.name}</strong>
+      <label className="admin-product-photo" title="Change product photo">
+        <img src={productImageSrc(image)} alt={name} loading="lazy" decoding="async" />
+        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseImage} disabled={imageBusy} />
+        <span>{imageBusy ? "Processing…" : "Change"}</span>
+      </label>
+      <label><span>Product name</span><input aria-label={`${product.name} product name`} value={name} onChange={(e) => setName(e.target.value)} type="text" /></label>
       <label><span>Price (€)</span><input aria-label={`${product.name} price in euros`} value={price} onChange={(e) => setPrice(e.target.value)} type="number" /></label>
       <label><span>Stock</span><input aria-label={`${product.name} stock count`} value={stock} onChange={(e) => setStock(e.target.value)} type="number" /></label>
       <button onClick={save} type="button">Save</button>
