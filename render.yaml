@@ -19,7 +19,7 @@ services:
       - key: PUBLIC_BASE_URL
         sync: false
       - key: EMAIL_LOGO_URL
-        value: https://theidukkispices.com/assets/idukki-spices-logo.jpeg
+        value: https://theidukkispices.com/assets/idukki-spices-logo.jpeg?v=20260711
       - key: SESSION_SECRET
         generateValue: true
       - key: ADMIN_EMAIL

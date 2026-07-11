@@ -38,8 +38,8 @@ const adminEmail = requiredEnv("ADMIN_EMAIL");
 const adminPasswordHash = requiredEnv("ADMIN_PASSWORD_HASH");
 const publicBaseUrl = process.env.PUBLIC_BASE_URL || `http://${host}:${port}`;
 const emailLogoUrl = process.env.EMAIL_LOGO_URL || (/^https:\/\//i.test(publicBaseUrl)
-  ? `${publicBaseUrl.replace(/\/$/, "")}/assets/idukki-spices-logo.jpeg`
-  : "https://theidukkispices.com/assets/idukki-spices-logo.jpeg");
+  ? `${publicBaseUrl.replace(/\/$/, "")}/assets/idukki-spices-logo.jpeg?v=20260711`
+  : "https://theidukkispices.com/assets/idukki-spices-logo.jpeg?v=20260711");
 const sessionSecret = requiredEnv("SESSION_SECRET");
 const MIN_ORDER_VALUE = 20;
 const FREE_SHIPPING_THRESHOLD = 50;
