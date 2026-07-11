@@ -40,7 +40,7 @@ import homeSlideCardamom from "../assets/home-slide-cardamom.jpg";
 import homeSlideCinnamon from "../assets/home-slide-cinnamon.jpg";
 import homeSlideBlackPepper from "../assets/home-slide-black-pepper.jpg";
 import homeSlideMixedSpices from "../assets/home-slide-mixed-spices.jpg";
-import cardamomPouch3d from "../assets/scroll-3d/cardamom-pouch-3d.png";
+import cardamomPouch3d from "../assets/scroll-3d/cardamom-pouch-3d.webp";
 
 const money = (value) => `€${Number(value || 0).toFixed(2)}`;
 const optimizedProductPath = (image = "") => String(image).replace(/(assets\/product-[^/]+-pack)\.png$/, "$1.jpg");
@@ -1087,6 +1087,7 @@ function Hero({ go, lang }) {
     const update = () => {
       frame = 0;
       const rect = hero.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top > window.innerHeight) return;
       const travel = Math.max(1, rect.height - window.innerHeight);
       const progress = Math.max(0, Math.min(1, -rect.top / travel));
       hero.style.setProperty("--hero-scroll", progress.toFixed(4));
@@ -1115,7 +1116,7 @@ function Hero({ go, lang }) {
         </div>
         <div className="cinematic-product" aria-label="Idukki Spices cardamom pouch">
           <div className="pouch-shadow" />
-          <img src={cardamomPouch3d} alt={fr ? "Sachet de cardamome Idukki Spices de 50 grammes" : "Idukki Spices 50 gram cardamom pouch"} width="1024" height="1536" fetchPriority="high" decoding="async" />
+          <img src={cardamomPouch3d} alt={fr ? "Sachet de cardamome Idukki Spices de 50 grammes" : "Idukki Spices 50 gram cardamom pouch"} width="733" height="1100" fetchPriority="high" decoding="async" />
         </div>
         <div className="cinematic-copy cinematic-copy-two">
           <p className="kicker">{copy.sealed}</p>
