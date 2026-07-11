@@ -43,6 +43,7 @@ import homeSlideMixedSpices from "../assets/home-slide-mixed-spices.jpg";
 import cardamomPouch3d from "../assets/scroll-3d/cardamom-pouch-3d.webp";
 
 const money = (value) => `€${Number(value || 0).toFixed(2)}`;
+const itemQuantity = (items = []) => items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
 const optimizedProductPath = (image = "") => String(image).replace(/(assets\/product-[^/]+-pack)\.png$/, "$1.jpg");
 const productImageSrc = (image) => `/${optimizedProductPath(image).replace(/^\//, "")}`;
 const MIN_ORDER_VALUE = 20;
@@ -1885,7 +1886,7 @@ function Cart({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, addT
       {cartItems.length > 0 && (
         <aside className="summary-card">
           <h2>Order summary</h2>
-          <p><span>Items</span><strong>{cartItems.length}</strong></p>
+          <p><span>Items</span><strong>{itemQuantity(cartItems)}</strong></p>
           <p><span>Subtotal</span><strong>{money(cartTotal)}</strong></p>
           <p><span>Shipping</span><ShippingPrice subtotal={cartTotal} shippingFee={shippingFee} lang={lang} /></p>
           <p className="total"><span>Total</span><strong>{money(orderTotal)}</strong></p>
@@ -2809,7 +2810,7 @@ function AdminOrderRow({ order, orders, setOrders, onDelete, onApproveRefund, on
         </div>
         <b>{money(order.total)}</b>
       </header>
-      <p className="muted">{order.items?.length || 0} items · {order.customer?.phone || "No phone saved"}</p>
+      <p className="muted">{itemQuantity(order.items)} items · {order.customer?.phone || "No phone saved"}</p>
       <div className="admin-order-controls">
         <select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)}>
           <option>Pending</option>
@@ -3003,7 +3004,7 @@ function OrderCard({ order, detailed = false, lang, onCancel, onRefund }) {
         </div>
         <span>{order.paymentStatus} / {order.deliveryStatus}</span>
       </header>
-      <p>{order.items?.length || 0} items · {money(order.total)}</p>
+      <p>{itemQuantity(order.items)} items · {money(order.total)}</p>
       {showActions && (
         <div className="order-actions">
           {onCancel && (
