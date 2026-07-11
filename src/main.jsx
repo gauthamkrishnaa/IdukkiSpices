@@ -972,7 +972,7 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
   return (
     <header className="topbar">
       <a className="brand" href="/" onClick={(event) => follow(event, "index")}>
-        <img src="/assets/idukki-spices-logo.jpeg" alt="Idukki Spices" />
+        <img src="/assets/idukki-spices-logo-transparent.png" alt="Idukki Spices" />
         <span className="brand-wordmark"><strong>Idukki</strong><em>Spices</em></span>
       </a>
       {navLinks("desktop-nav")}
@@ -1001,7 +1001,7 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
           <aside className="mobile-sidebar" role="dialog" aria-modal="true" aria-label="Site menu" onClick={(event) => event.stopPropagation()}>
             <div className="mobile-sidebar-head">
               <div className="brand compact-brand">
-                <img src="/assets/idukki-spices-logo.jpeg" alt="" />
+                <img src="/assets/idukki-spices-logo-transparent.png" alt="" />
                 <span className="brand-wordmark"><strong>Idukki</strong><em>Spices</em></span>
               </div>
               <button className="mobile-menu-button close" onClick={() => setMenuOpen(false)} type="button" aria-label="Close menu">
@@ -1145,7 +1145,7 @@ function Home(props) {
       <ShopByCategory go={props.go} />
       <section className="section" data-reveal>
         <SectionTitle eyebrow="Bestsellers" title="Customer favourites for daily cooking" />
-        <div className="product-grid">
+        <div className="product-grid home-favourites-grid">
           {featured.map((product) => <ProductCard key={product.id} product={product} onView={setQuickView} {...props} />)}
         </div>
       </section>
