@@ -37,6 +37,9 @@ function requiredEnv(name) {
 const adminEmail = requiredEnv("ADMIN_EMAIL");
 const adminPasswordHash = requiredEnv("ADMIN_PASSWORD_HASH");
 const publicBaseUrl = process.env.PUBLIC_BASE_URL || `http://${host}:${port}`;
+const emailLogoUrl = process.env.EMAIL_LOGO_URL || (/^https:\/\//i.test(publicBaseUrl)
+  ? `${publicBaseUrl.replace(/\/$/, "")}/assets/idukki-spices-logo.jpeg`
+  : "https://theidukkispices.com/assets/idukki-spices-logo.jpeg");
 const sessionSecret = requiredEnv("SESSION_SECRET");
 const MIN_ORDER_VALUE = 20;
 const FREE_SHIPPING_THRESHOLD = 50;
@@ -544,24 +547,14 @@ async function sendEmailNow(to, subject, body, attachments = []) {
   if (!process.env.SENDGRID_API_KEY) {
     return { sent: false, setupRequired: "SENDGRID_API_KEY" };
   }
-  const logoPath = path.join(root, "assets", "idukki-spices-logo.jpeg");
   const emailAttachments = [...attachments];
-  if (fs.existsSync(logoPath)) {
-    emailAttachments.push({
-      filename: "idukki-spices-logo.jpeg",
-      content: fs.readFileSync(logoPath),
-      type: "image/jpeg",
-      disposition: "inline",
-      contentId: "idukki-spices-logo"
-    });
-  }
   const payload = {
     personalizations: [{ to: [{ email: to }] }],
     from: parseEmailAddress(process.env.EMAIL_FROM || "Idukki Spices <idukkispicesfr@gmail.com>"),
     subject,
     content: [
       { type: "text/plain", value: body },
-      { type: "text/html", value: renderBrandedEmail({ subject, body, baseUrl: publicBaseUrl, logoSrc: "cid:idukki-spices-logo" }) }
+      { type: "text/html", value: renderBrandedEmail({ subject, body, baseUrl: publicBaseUrl, logoSrc: emailLogoUrl }) }
     ]
   };
   if (emailAttachments.length) {
