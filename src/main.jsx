@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   BarChart3,
@@ -40,6 +40,7 @@ import homeSlideCardamom from "../assets/home-slide-cardamom.jpg";
 import homeSlideCinnamon from "../assets/home-slide-cinnamon.jpg";
 import homeSlideBlackPepper from "../assets/home-slide-black-pepper.jpg";
 import homeSlideMixedSpices from "../assets/home-slide-mixed-spices.jpg";
+import cardamomPouch3d from "../assets/scroll-3d/cardamom-pouch-3d.png";
 
 const money = (value) => `€${Number(value || 0).toFixed(2)}`;
 const optimizedProductPath = (image = "") => String(image).replace(/(assets\/product-[^/]+-pack)\.png$/, "$1.jpg");
@@ -1055,20 +1056,57 @@ function CustomerNotificationBell({ notifications, onOpen, onClear }) {
 }
 
 function Hero({ go }) {
+  const heroRef = useRef(null);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const rect = hero.getBoundingClientRect();
+      const travel = Math.max(1, rect.height - window.innerHeight);
+      const progress = Math.max(0, Math.min(1, -rect.top / travel));
+      hero.style.setProperty("--hero-scroll", progress.toFixed(4));
+    };
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
   return (
-    <section className="hero" data-reveal>
-      <div className="hero-copy">
-        <p className="kicker">Kerala aroma, packed with care</p>
-        <h1>Idukki Spices for real kitchens</h1>
-        <p>Premium 7mm graded cardamom, pepper, warm whole spices, and ready-to-cook mixed packs with a simple secure checkout.</p>
-        <div className="hero-actions">
-          <button className="primary" onClick={() => go("shop")} type="button"><ShoppingBag size={18} /> Shop spices</button>
-          <button className="ghost" onClick={() => go("about")} type="button">Our plantation story <ChevronRight size={18} /></button>
+    <section className="hero scroll-3d-hero" data-reveal ref={heroRef}>
+      <div className="cinematic-sticky">
+        <div className="cinematic-glow" aria-hidden="true" />
+        <div className="cinematic-copy cinematic-copy-one">
+          <p className="kicker">From the high ranges of Kerala</p>
+          <h1>Cardamom with character.</h1>
+          <p>Carefully graded, freshly packed, and made to bring Idukki's true aroma into every kitchen.</p>
         </div>
-      </div>
-      <div className="hero-media">
-        <img src="/assets/product-mixed-spices-pack.jpg" alt="Idukki Spices mixed spice pack" width="1448" height="1086" fetchPriority="high" decoding="async" />
-        <div className="floating-proof"><ShieldCheck size={20} /> Secure online checkout</div>
+        <div className="cinematic-product" aria-label="Idukki Spices cardamom pouch">
+          <div className="pouch-shadow" />
+          <img src={cardamomPouch3d} alt="Idukki Spices 50 gram cardamom pouch" width="1024" height="1536" fetchPriority="high" decoding="async" />
+        </div>
+        <div className="cinematic-copy cinematic-copy-two">
+          <p className="kicker">Sealed at the source</p>
+          <h2>Freshness you can see.</h2>
+          <p>Premium green cardamom protected inside a resealable kraft pouch.</p>
+        </div>
+        <div className="cinematic-finale">
+          <p>Pure Kerala aroma. Delivered across France.</p>
+          <div className="hero-actions">
+            <button className="primary" onClick={() => go("shop")} type="button"><ShoppingBag size={18} /> Shop spices</button>
+            <button className="ghost" onClick={() => go("about")} type="button">Our plantation story <ChevronRight size={18} /></button>
+          </div>
+        </div>
       </div>
     </section>
   );
