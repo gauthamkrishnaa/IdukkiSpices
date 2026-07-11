@@ -2321,6 +2321,7 @@ function Admin({ products, setProducts }) {
   const [note, setNote] = useState("");
   const [toast, setToast] = useState(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [selectedMessageId, setSelectedMessageId] = useState("");
   const [activeSection, setActiveSection] = useState("overview");
   const [activeOrderStatus, setActiveOrderStatus] = useState("New order");
 
@@ -2344,6 +2345,16 @@ function Admin({ products, setProducts }) {
     return () => window.clearTimeout(timer);
   }, [toast?.id]);
   const showAdminToast = (message, type = "success") => setToast({ id: Date.now(), message, type });
+  const openNotification = (notification) => {
+    if (notification.type !== "contact-message") return;
+    const targetId = notification.orderId || messages.find((message) => message.email === notification.customerEmail)?.id;
+    setActiveSection("messages");
+    setSelectedMessageId(targetId || "");
+    setNotificationsOpen(false);
+    window.setTimeout(() => {
+      document.getElementById(`admin-message-${targetId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+  };
 
   const login = async (event) => {
     event.preventDefault();
@@ -2489,7 +2500,7 @@ function Admin({ products, setProducts }) {
             </button>
             {notificationsOpen && (
               <div className="admin-notification-popover">
-                <AdminNotificationBar notifications={notifications} onMarkRead={markNotificationsRead} onClear={clearNotifications} />
+                <AdminNotificationBar notifications={notifications} onMarkRead={markNotificationsRead} onClear={clearNotifications} onOpenMessage={openNotification} />
               </div>
             )}
           </div>
@@ -2587,7 +2598,7 @@ function Admin({ products, setProducts }) {
             {messages.length ? (
               <div className="admin-message-scroll">
                 {messages.map((message) => (
-                  <AdminContactMessage key={message.id} message={message} onReply={sendMessageReply} onStatus={updateMessageStatus} />
+                  <AdminContactMessage key={message.id} message={message} onReply={sendMessageReply} onStatus={updateMessageStatus} selected={selectedMessageId === message.id} />
                 ))}
               </div>
             ) : <p className="muted">No contact messages yet.</p>}
@@ -2598,7 +2609,7 @@ function Admin({ products, setProducts }) {
   );
 }
 
-function AdminContactMessage({ message, onReply, onStatus }) {
+function AdminContactMessage({ message, onReply, onStatus, selected = false }) {
   const [isReplyOpen, setIsReplyOpen] = useState(false);
   const [replyText, setReplyText] = useState("Thank you for contacting Idukki Spices. We received your message and will help you shortly.");
   const [isSending, setIsSending] = useState(false);
@@ -2627,7 +2638,7 @@ function AdminContactMessage({ message, onReply, onStatus }) {
     }
   };
   return (
-    <article className={`admin-message ${message.status === "New" ? "unread" : ""}`}>
+    <article className={`admin-message ${message.status === "New" ? "unread" : ""} ${selected ? "selected" : ""}`} id={`admin-message-${message.id}`}>
       <header>
         <div>
           <strong>{message.name}</strong>
@@ -2658,7 +2669,7 @@ function AdminContactMessage({ message, onReply, onStatus }) {
         <span>{created}</span>
         <div>
           <button className="ghost small" onClick={() => setIsReplyOpen((open) => !open)} type="button">Reply</button>
-          <button className="ghost small" disabled={message.status === "Read"} onClick={() => onStatus(message, "Read")} type="button">Mark read</button>
+          <button className="ghost small" disabled={message.status !== "New"} onClick={() => onStatus(message, "Read")} type="button">Mark read</button>
           <button className="primary small" disabled={message.status === "Replied"} onClick={() => onStatus(message, "Replied")} type="button">Mark replied</button>
         </div>
       </footer>
@@ -2666,8 +2677,9 @@ function AdminContactMessage({ message, onReply, onStatus }) {
   );
 }
 
-function AdminNotificationBar({ notifications, onMarkRead, onClear }) {
-  const unread = notifications.filter((item) => !Number(item.isRead ?? item.read)).length;
+function AdminNotificationBar({ notifications, onMarkRead, onClear, onOpenMessage }) {
+  const unreadNotifications = notifications.filter((item) => !Number(item.isRead ?? item.read));
+  const unread = unreadNotifications.length;
   return (
     <section className="admin-notification-bar">
       <div className="notification-bar-head">
@@ -2677,13 +2689,13 @@ function AdminNotificationBar({ notifications, onMarkRead, onClear }) {
           {unread > 0 && <span>{unread} new</span>}
         </div>
         <div className="notification-actions">
-          <button className="ghost small" disabled={!notifications.length || unread === 0} onClick={onMarkRead} type="button">Mark all read</button>
+          <button className="ghost small" disabled={unread === 0} onClick={onMarkRead} type="button">Mark all read</button>
           <button className="ghost small danger-link" disabled={!notifications.length} onClick={onClear} type="button">Clear</button>
         </div>
       </div>
-      {notifications.length ? (
+      {unreadNotifications.length ? (
         <div className="notification-list">
-          {notifications.map((item) => {
+          {unreadNotifications.map((item) => {
             const created = item.createdAt ? new Date(item.createdAt).toLocaleString(undefined, {
               day: "2-digit",
               month: "short",
@@ -2691,17 +2703,17 @@ function AdminNotificationBar({ notifications, onMarkRead, onClear }) {
               minute: "2-digit"
             }) : "";
             return (
-              <article className={Number(item.isRead ?? item.read) ? "" : "unread"} key={item.id}>
+              <button className={`notification-entry ${Number(item.isRead ?? item.read) ? "" : "unread"} ${item.type === "contact-message" ? "clickable" : ""}`} key={item.id} onClick={() => onOpenMessage?.(item)} type="button">
                 <div>
                   <strong>{item.title}</strong>
                   <p>{item.body}</p>
                 </div>
                 <span>{created}</span>
-              </article>
+              </button>
             );
           })}
         </div>
-      ) : <p className="muted">No customer updates yet.</p>}
+      ) : <p className="muted">No new updates.</p>}
     </section>
   );
 }

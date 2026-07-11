@@ -3,6 +3,8 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const database = process.env.DATABASE_URL ? require("./database-postgres") : require("./database");
+const { createBrandedInvoicePdf } = require("./invoice-pdf");
+const { renderBrandedEmail } = require("./email-template");
 
 const root = __dirname;
 const distRoot = path.join(root, "dist");
@@ -546,7 +548,10 @@ async function sendEmailNow(to, subject, body, attachments = []) {
     personalizations: [{ to: [{ email: to }] }],
     from: parseEmailAddress(process.env.EMAIL_FROM || "Idukki Spices <idukkispicesfr@gmail.com>"),
     subject,
-    content: [{ type: "text/plain", value: body }]
+    content: [
+      { type: "text/plain", value: body },
+      { type: "text/html", value: renderBrandedEmail({ subject, body, baseUrl: publicBaseUrl }) }
+    ]
   };
   if (attachments.length) {
     payload.attachments = attachments.map((attachment) => ({
@@ -669,7 +674,7 @@ async function confirmPaidOrder(orderId, paymentDetails = {}) {
   if (updated.confirmationEmailSent) {
     return { order: updated, emailResult: { skipped: true, reason: "already-sent" } };
   }
-  const invoicePdf = createFrenchInvoicePdf(updated);
+  const invoicePdf = await createBrandedInvoicePdf(updated);
   const emailResult = await sendEmail(
     updated.customer.email,
     `Facture Idukki Spices ${updated.id}`,
@@ -1243,7 +1248,7 @@ function serveStatic(req, res, url) {
     const isGoogleVerificationFile = rootAssetExt === ".html" && path.basename(rootAssetPath).startsWith("google");
     if (!fs.existsSync(filePath) && rootAssetPath.startsWith(root) && fs.existsSync(rootAssetPath) && rootAssetExt && (rootAssetExt !== ".html" || isGoogleVerificationFile)) {
       filePath = rootAssetPath;
-    } else if (!fs.existsSync(filePath) || path.extname(filePath) === ".html") {
+    } else if (!fs.existsSync(filePath)) {
       filePath = path.join(distRoot, "index.html");
     }
   }

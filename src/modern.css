@@ -3132,6 +3132,29 @@ h3 {
   color: #8b2d1a;
 }
 
+.notification-actions button:disabled,
+.admin-message button:disabled {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: 0.32;
+  border-color: rgba(117, 103, 91, 0.16);
+  background: rgba(117, 103, 91, 0.06);
+  color: var(--muted);
+  box-shadow: none;
+  filter: grayscale(1);
+  transform: none;
+}
+
+.notification-actions button:disabled:hover,
+.admin-message button:disabled:hover {
+  border-color: rgba(117, 103, 91, 0.16);
+  background: rgba(117, 103, 91, 0.06);
+  color: var(--muted);
+  box-shadow: none;
+  filter: grayscale(1);
+  transform: none;
+}
+
 .notification-bar-head > div span {
   display: inline-flex;
   align-items: center;
@@ -3153,32 +3176,62 @@ h3 {
   overscroll-behavior: contain;
 }
 
-.notification-list article {
+.notification-list article,
+.notification-entry {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
+  width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #fffdf8;
+  color: inherit;
+  text-align: left;
+  cursor: default;
 }
 
-.notification-list article.unread {
+.notification-list article.unread,
+.notification-entry.unread {
   border-color: rgba(47, 111, 68, 0.38);
   background: #eef8ee;
 }
 
-.notification-list article p {
+.notification-entry.clickable {
+  cursor: pointer;
+}
+
+.notification-entry.clickable:hover {
+  transform: translateY(-1px);
+  border-color: rgba(47, 111, 68, 0.5);
+  box-shadow: 0 10px 24px rgba(36, 29, 23, 0.1);
+}
+
+.notification-list article p,
+.notification-entry p {
   margin: 3px 0 0;
   color: var(--muted);
   font-size: 0.92rem;
 }
 
-.notification-list article > span {
+.notification-list article > span,
+.notification-entry > span {
   color: var(--leaf-dark);
   font-size: 0.85rem;
   font-weight: 900;
   white-space: nowrap;
+}
+
+.admin-message.selected {
+  border-color: rgba(47, 111, 68, 0.62);
+  box-shadow: 0 0 0 4px rgba(47, 111, 68, 0.14), 0 20px 44px rgba(36, 29, 23, 0.13);
+  animation: message-focus-pulse 1.2s ease-out both;
+}
+
+@keyframes message-focus-pulse {
+  0% { transform: scale(0.985); }
+  45% { transform: scale(1.006); }
+  100% { transform: scale(1); }
 }
 
 .stat-grid {
@@ -3474,6 +3527,14 @@ h3 {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.admin-message footer .primary,
+.admin-message footer .ghost {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 40px;
+  padding: 8px 14px;
 }
 
 .admin-message a.ghost {
