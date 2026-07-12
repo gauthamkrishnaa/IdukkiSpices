@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { createPortal } from "react-dom";
 import {
   BarChart3,
   Bell,
@@ -1840,12 +1841,24 @@ function QuickView({ product, cart, addToCart, onClose, lang }) {
   useEffect(() => {
     setSelectedQty(cartQty);
   }, [cartQty]);
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onClose]);
   const addSelected = () => {
     const difference = selectedQty - cartQty;
     if (!difference) return;
     addToCart(product.id, difference);
   };
-  return (
+  return createPortal(
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <article className="quick-view" role="dialog" aria-modal="true" aria-label={displayProduct.name} onClick={(event) => event.stopPropagation()}>
         <button className="modal-close" type="button" onClick={onClose}>Close</button>
@@ -1869,7 +1882,8 @@ function QuickView({ product, cart, addToCart, onClose, lang }) {
           </div>
         </div>
       </article>
-    </div>
+    </div>,
+    document.body
   );
 }
 
