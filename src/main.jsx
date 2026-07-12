@@ -615,7 +615,14 @@ const localizeProduct = (product, lang) => {
   if (lang !== "fr" || !product) return product;
   const id = product.id || productFallbackIds[product.name];
   const translated = productTranslations.fr[id];
-  return translated ? { ...product, ...translated, originalName: product.name } : product;
+  if (!translated) return product;
+  const hasCustomName = Boolean(product.customName) || (Boolean(product.id) && productFallbackIds[product.name] !== product.id);
+  return {
+    ...product,
+    ...translated,
+    ...(hasCustomName ? { name: product.name } : {}),
+    originalName: product.name
+  };
 };
 
 const ShippingPrice = ({ subtotal, shippingFee, lang }) => {
@@ -2882,7 +2889,7 @@ function ProductAdminRow({ product, setProducts, onFeedback }) {
     try {
       if (!name.trim()) return onFeedback?.("Product name is required.", "error");
       const products = await api("/api/products");
-      const next = products.map((item) => item.id === product.id ? { ...item, name: name.trim(), image, price: Number(price), stock: Number(stock) } : item);
+      const next = products.map((item) => item.id === product.id ? { ...item, name: name.trim(), customName: true, image, price: Number(price), stock: Number(stock) } : item);
       const saved = await api("/api/products", { method: "PUT", body: JSON.stringify(next) });
       setProducts(saved);
       onFeedback?.(`${name.trim()} updated successfully.`);
