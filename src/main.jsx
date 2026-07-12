@@ -1222,7 +1222,6 @@ function SpiceJourney({ go }) {
         <div className="cinema-card cinema-card-one"><Leaf size={18} />7mm graded pods</div>
         <div className="cinema-card cinema-card-two"><Package size={18} />Freshly packed</div>
         <div className="cinema-card cinema-card-three"><Truck size={18} />France delivery</div>
-        <div className="cinema-progress"><span /><span /><span /></div>
       </div>
     </section>
   );
