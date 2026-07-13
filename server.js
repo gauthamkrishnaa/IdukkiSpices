@@ -631,6 +631,7 @@ async function sendEmailNow(to, subject, body, attachments = []) {
   }
   const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
+    signal: AbortSignal.timeout(10_000),
     headers: {
       "Authorization": `Bearer ${process.env.SENDGRID_API_KEY}`,
       "Content-Type": "application/json"
@@ -702,6 +703,7 @@ async function verifyStripeCheckoutSession(sessionId, orderId) {
   if (!process.env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not configured");
   if (!sessionId) throw new Error("Payment session is missing");
   const response = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, {
+    signal: AbortSignal.timeout(10_000),
     headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }
   });
   const data = await response.json().catch(() => ({}));
@@ -1486,22 +1488,25 @@ const server = http.createServer(async (req, res) => {
 
 async function startServer() {
   await database.initDatabase();
-  await reconcilePendingPayments();
-  await database.releaseExpiredReservations();
+  server.listen(port, host, () => {
+    console.log(`Idukki Spices running at http://${host}:${port}`);
+  });
+
+  reconcilePendingPayments()
+    .then(() => database.releaseExpiredReservations())
+    .catch((error) => console.error("Initial payment/reservation recovery failed:", error.message));
+  processEmailJobs().catch((error) => console.error("Initial email recovery failed:", error.message));
+
   const reservationCleanup = setInterval(() => {
     reconcilePendingPayments()
       .then(() => database.releaseExpiredReservations())
       .catch((error) => console.error("Payment/reservation cleanup failed:", error.message));
   }, 60_000);
   reservationCleanup.unref();
-  await processEmailJobs();
   const emailRetry = setInterval(() => {
     processEmailJobs().catch((error) => console.error("Email retry failed:", error.message));
   }, 60_000);
   emailRetry.unref();
-  server.listen(port, host, () => {
-    console.log(`Idukki Spices running at http://${host}:${port}`);
-  });
 }
 
 startServer().catch((error) => {
