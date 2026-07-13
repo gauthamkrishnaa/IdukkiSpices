@@ -999,10 +999,6 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
             onClear={onClearNotifications}
           />
         )}
-        <div className="language-toggle mobile-language" aria-label="Language">
-          <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")} type="button">EN</button>
-          <button className={lang === "fr" ? "active" : ""} onClick={() => setLang("fr")} type="button">FR</button>
-        </div>
         <button className="mobile-menu-button" onClick={() => setMenuOpen(true)} type="button" aria-label="Open menu">
           <Menu size={24} />
         </button>
@@ -1018,6 +1014,13 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
               <button className="mobile-menu-button close" onClick={() => setMenuOpen(false)} type="button" aria-label="Close menu">
                 <X size={24} />
               </button>
+            </div>
+            <div className="mobile-sidebar-tools">
+              <strong>{lang === "fr" ? "Langue" : "Language"}</strong>
+              <div className="language-toggle mobile-language" aria-label="Language">
+                <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")} type="button">EN</button>
+                <button className={lang === "fr" ? "active" : ""} onClick={() => setLang("fr")} type="button">FR</button>
+              </div>
             </div>
             {navLinks("mobile-nav", { showLanguage: false, showNotifications: false, items: mobileLinks })}
           </aside>

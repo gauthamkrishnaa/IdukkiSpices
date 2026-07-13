@@ -478,9 +478,9 @@ nav {
   display: grid;
   align-content: start;
   gap: 18px;
-  width: min(360px, 88vw);
+  width: min(390px, 94vw);
   height: 100svh;
-  padding: 18px;
+  padding: max(22px, env(safe-area-inset-top)) 22px max(22px, env(safe-area-inset-bottom));
   border-left: 1px solid var(--line);
   background: #fffaf2;
   box-shadow: -24px 0 55px rgba(20, 16, 12, 0.24);
@@ -507,8 +507,32 @@ nav {
 }
 
 .compact-brand img {
+  flex: 0 0 58px;
   width: 48px;
-  height: 38px;
+  height: 48px;
+  transform: scale(1.18);
+}
+
+.mobile-sidebar-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  padding: 8px 10px 8px 16px;
+  border: 1px solid rgba(47, 111, 68, 0.14);
+  border-radius: 18px;
+  background: #fffdf8;
+}
+
+.mobile-sidebar-tools > strong {
+  color: var(--leaf-dark);
+  font-size: 1.02rem;
+  font-weight: 900;
+}
+
+.mobile-sidebar-tools .language-toggle {
+  flex: 0 0 auto;
 }
 
 .mobile-nav {
@@ -521,11 +545,11 @@ nav {
 .mobile-nav > button {
   justify-content: space-between;
   width: 100%;
-  min-height: 50px;
-  padding: 12px 14px;
+  min-height: 58px;
+  padding: 14px 16px;
   border-color: rgba(47, 111, 68, 0.14);
   background: #fffdf8;
-  font-size: 1rem;
+  font-size: 1.08rem;
 }
 
 .mobile-nav .customer-notification {
@@ -4302,7 +4326,7 @@ h3 {
   }
 
   .mobile-language {
-    display: inline-grid;
+    display: grid;
   }
 
   .mobile-header-actions .customer-notification {
@@ -4310,18 +4334,18 @@ h3 {
   }
 
   .mobile-header-actions .notification-bell {
-    width: 38px;
-    min-height: 38px;
-    padding: 7px;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
+    width: 44px;
+    min-height: 44px;
+    padding: 9px;
+    border: 1px solid rgba(47, 111, 68, 0.18);
+    background: #fffaf2;
+    box-shadow: 0 10px 24px rgba(36, 29, 23, 0.08);
   }
 
   .mobile-header-actions .notification-bell:hover,
   .mobile-header-actions .notification-bell.has-unread {
-    border: 0;
-    background: transparent;
+    border: 1px solid rgba(47, 111, 68, 0.24);
+    background: #f2f8ef;
     color: var(--leaf-dark);
   }
 
@@ -4351,7 +4375,8 @@ h3 {
   }
 
   .brand {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
+    min-width: 0;
     gap: 7px;
   }
 
@@ -4365,7 +4390,8 @@ h3 {
   .brand-wordmark { margin-left: 4px; }
 
   .brand span {
-    width: 76px;
+    width: auto;
+    white-space: nowrap;
   }
 
   .brand-wordmark strong {
@@ -4378,18 +4404,14 @@ h3 {
   }
 
   .mobile-header-actions {
-    gap: 4px;
-  }
-
-  .mobile-language button {
-    min-width: 31px;
-    padding-inline: 7px;
+    flex: 0 0 auto;
+    gap: 8px;
   }
 
   .mobile-cart-link,
   .mobile-menu-button {
-    width: 40px;
-    min-height: 40px;
+    width: 44px;
+    min-height: 44px;
   }
 }
 
