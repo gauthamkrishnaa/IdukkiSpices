@@ -3044,6 +3044,97 @@ h3 {
   border-color: var(--line);
 }
 
+/* Keep interactive labels and card copy readable in both display modes. */
+:root[data-theme="dark"] .primary,
+:root[data-theme="dark"] nav a.active,
+:root[data-theme="dark"] .product-card footer button,
+:root[data-theme="dark"] .home-delivery-banner button,
+:root[data-theme="dark"] .theme-toggle button.active,
+:root[data-theme="dark"] .language-toggle button.active {
+  color: #102013;
+}
+
+:root[data-theme="dark"] .ghost,
+:root[data-theme="dark"] .floating-proof,
+:root[data-theme="dark"] .plantation-gallery figcaption,
+:root[data-theme="dark"] .about-motion-copy,
+:root[data-theme="dark"] .about-motion-steps article,
+:root[data-theme="dark"] .about-process-gallery figure,
+:root[data-theme="dark"] .about-process-gallery figcaption,
+:root[data-theme="dark"] .customer-notification-panel,
+:root[data-theme="dark"] .customer-notification-list article,
+:root[data-theme="dark"] .mobile-sidebar-tools,
+:root[data-theme="dark"] .mobile-nav a,
+:root[data-theme="dark"] .mobile-nav > button,
+:root[data-theme="dark"] .equal-gallery figure,
+:root[data-theme="dark"] .about-reason-card,
+:root[data-theme="dark"] .about-products-strip {
+  border-color: var(--line);
+  background: var(--panel);
+  color: #f7efe2;
+}
+
+:root[data-theme="dark"] .ghost:hover:not(:disabled),
+:root[data-theme="dark"] .customer-notification-list article.unread,
+:root[data-theme="dark"] .mobile-header-actions .notification-bell.has-unread {
+  background: #26372a;
+  color: #f7efe2;
+}
+
+:root[data-theme="dark"] .about-story-panel h2,
+:root[data-theme="dark"] .about-europe h2,
+:root[data-theme="dark"] .about-reasons h2,
+:root[data-theme="dark"] .about-products-strip h2,
+:root[data-theme="dark"] .about-final-gallery h2,
+:root[data-theme="dark"] .about-reason-card h3,
+:root[data-theme="dark"] .about-product-orb,
+:root[data-theme="dark"] .about-motion-steps strong,
+:root[data-theme="dark"] .about-process-gallery figcaption,
+:root[data-theme="dark"] .mobile-sidebar-tools > strong {
+  color: #f7efe2;
+}
+
+:root[data-theme="dark"] .about-story-panel strong,
+:root[data-theme="dark"] .danger-zone h3,
+:root[data-theme="dark"] .danger-zone p {
+  color: #f0b49f;
+}
+
+:root[data-theme="dark"] .about-luxe .section-kicker {
+  color: #e8c173;
+}
+
+:root[data-theme="dark"] .about-reason-card div {
+  border-color: rgba(139, 207, 145, 0.28);
+  background: rgba(139, 207, 145, 0.12);
+  color: #bce6c0;
+}
+
+:root[data-theme="dark"] .about-products-strip {
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+:root[data-theme="dark"] .about-process-gallery figure:nth-child(4) img {
+  background: linear-gradient(160deg, #223126, #17231b);
+}
+
+:root:not([data-theme="dark"]) .section-kicker {
+  color: #855615;
+}
+
+.about-luxe-hero .eyebrow,
+.about-promise-band .section-kicker {
+  color: #f2cf8a;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.3);
+}
+
+:root:not([data-theme="dark"]) .muted,
+:root:not([data-theme="dark"]) .settings-card p,
+:root:not([data-theme="dark"]) .profile-details span,
+:root:not([data-theme="dark"]) .equal-gallery figcaption span {
+  color: #66584d;
+}
+
 .auth-screen {
   min-height: calc(100svh - 74px);
   display: grid;
