@@ -93,6 +93,11 @@ async function initDatabase() {
   }
 }
 
+async function healthCheck() {
+  const result = await pool.query("SELECT 1 AS ok");
+  return result.rows[0]?.ok === 1;
+}
+
 const getProducts = () => list("products");
 const saveProducts = (products) => replaceCollection("products", products, (product) => product.id);
 const getOrders = async () => (await list("orders")).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
@@ -100,8 +105,38 @@ const getOrderById = (id) => get("orders", id);
 const deleteOrderById = (id) => remove("orders", id);
 
 async function saveOrder(order) {
-  const normalized = { ...order, id: order.id || makeId("IDK"), createdAt: order.createdAt || now() };
-  return put("orders", normalized.id, normalized);
+  const normalized = {
+    ...order,
+    id: order.id || makeId("IDK"),
+    createdAt: order.createdAt || now(),
+    reservationStatus: "active",
+    reservationExpiresAt: order.reservationExpiresAt || new Date(Date.now() + 35 * 60_000).toISOString()
+  };
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (const item of [...(normalized.items || [])].sort((a, b) => String(a.id).localeCompare(String(b.id)))) {
+      const result = await client.query(
+        "SELECT data FROM app_records WHERE collection = 'products' AND record_key = $1 FOR UPDATE",
+        [String(item.id)]
+      );
+      const product = result.rows[0]?.data;
+      if (!product || Number(product.stock || 0) < Number(item.qty || 0)) {
+        const error = new Error(`${product?.name || "A product"} no longer has enough stock.`);
+        error.statusCode = 409;
+        throw error;
+      }
+      await put("products", item.id, { ...product, stock: Number(product.stock) - Number(item.qty) }, client);
+    }
+    await put("orders", normalized.id, normalized, client);
+    await client.query("COMMIT");
+    return normalized;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function updateOrder(id, changes = {}) {
@@ -110,7 +145,57 @@ async function updateOrder(id, changes = {}) {
   return put("orders", id, { ...order, ...changes, updatedAt: now() });
 }
 
-const updateOrderPaymentStatus = (id, paymentStatus, changes = {}) => updateOrder(id, { ...changes, paymentStatus });
+const updateOrderPaymentStatus = async (id, paymentStatus, changes = {}) => {
+  const order = await getOrderById(id);
+  if (paymentStatus === "Paid" && order?.reservationStatus === "released") {
+    const error = new Error("This checkout reservation has expired. Start a new checkout.");
+    error.statusCode = 409;
+    throw error;
+  }
+  const reservationChanges = paymentStatus === "Paid" ? { reservationStatus: "consumed", reservationConsumedAt: now() } : {};
+  return updateOrder(id, { ...changes, ...reservationChanges, paymentStatus });
+};
+
+async function releaseOrderReservation(id, reason = "released") {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const orderResult = await client.query(
+      "SELECT data FROM app_records WHERE collection = 'orders' AND record_key = $1 FOR UPDATE",
+      [String(id)]
+    );
+    const order = orderResult.rows[0]?.data;
+    if (!order || !["active", "consumed"].includes(order.reservationStatus)) {
+      await client.query("COMMIT");
+      return order || null;
+    }
+    for (const item of [...(order.items || [])].sort((a, b) => String(a.id).localeCompare(String(b.id)))) {
+      const productResult = await client.query(
+        "SELECT data FROM app_records WHERE collection = 'products' AND record_key = $1 FOR UPDATE",
+        [String(item.id)]
+      );
+      const product = productResult.rows[0]?.data;
+      if (product) await put("products", item.id, { ...product, stock: Number(product.stock || 0) + Number(item.qty || 0) }, client);
+    }
+    const updated = { ...order, reservationStatus: "released", reservationReleasedAt: now(), reservationReleaseReason: reason };
+    await put("orders", id, updated, client);
+    await client.query("COMMIT");
+    return updated;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function releaseExpiredReservations() {
+  const timestamp = Date.now();
+  const orders = await getOrders();
+  const expired = orders.filter((order) => order.reservationStatus === "active" && Date.parse(order.reservationExpiresAt || "") <= timestamp);
+  for (const order of expired) await releaseOrderReservation(order.id, "expired");
+  return expired.length;
+}
 const saveOrders = (orders) => replaceCollection("orders", orders, (order) => order.id);
 
 const getCustomers = () => list("customers");
@@ -206,12 +291,33 @@ async function getOutbox() {
   return (await list("outbox")).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 
+async function queueEmailJob({ id, type, orderId }) {
+  const existing = await get("email_jobs", id);
+  if (existing) return existing;
+  const timestamp = now();
+  return put("email_jobs", id, { id, type, orderId, status: "pending", attempts: 0, createdAt: timestamp, updatedAt: timestamp, nextAttemptAt: timestamp, lastError: "" });
+}
+
+async function getDueEmailJobs(limit = 10) {
+  const timestamp = Date.now();
+  return (await list("email_jobs"))
+    .filter((job) => job.status === "pending" && Date.parse(job.nextAttemptAt || "") <= timestamp)
+    .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)))
+    .slice(0, Math.max(1, Number(limit) || 10));
+}
+
+async function updateEmailJob(id, changes = {}) {
+  const job = await get("email_jobs", id);
+  return job ? put("email_jobs", id, { ...job, ...changes, updatedAt: now() }) : null;
+}
+
 module.exports = {
-  initDatabase, getProducts, saveProducts, getOrders, getOrderById, deleteOrderById,
+  initDatabase, healthCheck, getProducts, saveProducts, getOrders, getOrderById, deleteOrderById,
   updateOrderPaymentStatus, updateOrder, saveOrders, getCustomers, getCustomerByIdentity,
   registerCustomer, updateCustomerByEmail, deleteCustomerByEmail, deleteCustomerById,
   saveCustomers, saveOtpChallenge, getOtpChallenge, deleteOtpChallenge,
   createAdminNotification, getAdminNotifications, markAdminNotificationsRead,
   markContactNotificationRead, clearAdminNotifications, createContactMessage, getContactMessages, updateContactMessage,
-  createConfirmation, getOutbox, saveOrder
+  createConfirmation, getOutbox, saveOrder, releaseOrderReservation, releaseExpiredReservations,
+  queueEmailJob, getDueEmailJobs, updateEmailJob
 };

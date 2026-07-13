@@ -59,7 +59,7 @@ function formatBody(body) {
 }
 
 function renderBrandedEmail({ subject, body, baseUrl, logoSrc }) {
-  const safeBaseUrl = String(baseUrl || "https://idukkispices.com").replace(/\/$/, "");
+  const safeBaseUrl = String(baseUrl || "https://theidukkispices.com").replace(/\/$/, "");
   const safeLogoSrc = escapeHtml(logoSrc || `${safeBaseUrl}/assets/idukki-spices-logo.jpeg`);
   const theme = emailTheme(subject);
   const loweredSubject = String(subject || "").toLowerCase();

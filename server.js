@@ -57,8 +57,37 @@ const mimeTypes = {
 };
 
 function sendJson(res, status, data) {
+  res.setHeader("Cache-Control", "no-store");
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(data));
+}
+
+function applySecurityHeaders(res) {
+  const contentSecurityPolicy = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://data.geopf.fr",
+    "media-src 'self'",
+    "worker-src 'self' blob:"
+  ];
+  if (process.env.NODE_ENV === "production") contentSecurityPolicy.push("upgrade-insecure-requests");
+  res.setHeader("Content-Security-Policy", contentSecurityPolicy.join("; "));
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(self)");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000");
+  }
 }
 
 function calculateOrderCharges(items = []) {
@@ -430,9 +459,29 @@ function phoneError(value) {
   return "";
 }
 
-function isFrenchDeliveryAddress(value) {
+async function validateFrenchDeliveryAddress(value) {
   const address = String(value || "").trim();
-  return /\bfrance\b/i.test(address) || /\b(?:0[1-9]|[1-8]\d|9[0-5])\d{3}\b/.test(address);
+  if (address.length < 8 || address.length > 300) return null;
+  const params = new URLSearchParams({ q: address, index: "address", limit: "1" });
+  const response = await fetch(`https://data.geopf.fr/geocodage/search?${params}`, {
+    signal: AbortSignal.timeout(6000),
+    headers: { "User-Agent": "Idukki-Spices/1.0 (address validation)" }
+  });
+  if (!response.ok) throw new Error("French address validation service is temporarily unavailable.");
+  const data = await response.json();
+  const properties = data?.features?.[0]?.properties;
+  const allowedTypes = new Set(["housenumber", "locality"]);
+  if (!properties?.label || !properties.postcode || !properties.citycode || Number(properties.score || 0) < 0.55 || !allowedTypes.has(properties.type)) {
+    return null;
+  }
+  return {
+    label: properties.label,
+    postcode: properties.postcode,
+    cityCode: properties.citycode,
+    city: properties.city || "",
+    type: properties.type,
+    score: Number(properties.score)
+  };
 }
 
 function adminToken(req) {
@@ -627,6 +676,7 @@ async function createStripeCheckout(order) {
     mode: "payment",
     success_url: `${publicBaseUrl}/payment-success.html?order=${encodeURIComponent(order.id)}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${publicBaseUrl}/checkout.html?payment=cancelled&order=${encodeURIComponent(order.id)}`,
+    expires_at: String(Math.floor((Date.parse(order.reservationExpiresAt) - 5 * 60_000) / 1000)),
     "metadata[order_id]": order.id
   };
   order.items.forEach((item, index) => {
@@ -688,29 +738,95 @@ function verifyStripeWebhook(rawBody, signatureHeader) {
 async function confirmPaidOrder(orderId, paymentDetails = {}) {
   const updated = await database.updateOrderPaymentStatus(orderId, "Paid", paymentDetails);
   if (!updated) return null;
-  if (updated.confirmationEmailSent) {
-    return { order: updated, emailResult: { skipped: true, reason: "already-sent" } };
+  if (!updated.adminPaidNotificationSent) {
+    await customerActionNotification({
+      type: "new-order",
+      title: "New paid order received",
+      body: `${updated.customer?.name || "Customer"} paid for order ${updated.id} (€${Number(updated.total || 0).toFixed(2)}).`,
+      order: updated
+    });
+    await database.updateOrder(updated.id, { adminPaidNotificationSent: true, adminPaidNotificationSentAt: new Date().toISOString() });
   }
-  const invoicePdf = await createBrandedInvoicePdf(updated);
-  const emailResult = await sendEmail(
-    updated.customer.email,
-    `Facture Idukki Spices ${updated.id}`,
-    frenchInvoiceEmail(updated),
-    [{ filename: `facture-${updated.id}.pdf`, content: invoicePdf }]
-  );
-  await customerActionNotification({
-    type: "new-order",
-    title: "New paid order received",
-    body: `${updated.customer?.name || "Customer"} paid for order ${updated.id} (€${Number(updated.total || 0).toFixed(2)}).`,
-    order: updated
-  });
-  const confirmed = await database.updateOrderPaymentStatus(updated.id, "Paid", {
-    ...paymentDetails,
-    confirmationEmailSent: true,
-    confirmationEmailSentAt: new Date().toISOString(),
-    confirmationEmailResult: emailResult
-  });
-  return { order: confirmed, emailResult };
+  if (updated.confirmationEmailSent) {
+    return { order: await database.getOrderById(updated.id), emailResult: { skipped: true, reason: "already-sent" } };
+  }
+  await database.queueEmailJob({ id: `order-confirmation-${updated.id}`, type: "order-confirmation", orderId: updated.id });
+  await processEmailJobs();
+  const confirmed = await database.getOrderById(updated.id);
+  return {
+    order: confirmed,
+    emailResult: confirmed.confirmationEmailSent
+      ? confirmed.confirmationEmailResult
+      : { queued: true, reason: "delivery-will-retry" }
+  };
+}
+
+let processingEmailJobs = false;
+
+async function processEmailJobs() {
+  if (processingEmailJobs) return;
+  processingEmailJobs = true;
+  try {
+    for (const job of await database.getDueEmailJobs(10)) {
+      try {
+        if (job.type !== "order-confirmation") throw new Error(`Unknown email job type: ${job.type}`);
+        const order = await database.getOrderById(job.orderId);
+        if (!order) throw new Error("Order no longer exists");
+        if (order.confirmationEmailSent) {
+          await database.updateEmailJob(job.id, { status: "sent", lastError: "" });
+          continue;
+        }
+        const invoicePdf = await createBrandedInvoicePdf(order);
+        const result = await sendEmail(
+          order.customer.email,
+          `Facture Idukki Spices ${order.id}`,
+          frenchInvoiceEmail(order),
+          [{ filename: `facture-${order.id}.pdf`, content: invoicePdf }]
+        );
+        if (!result?.sent) throw new Error(result?.setupRequired ? `${result.setupRequired} is not configured` : "Email provider did not accept the message");
+        await database.updateOrder(order.id, {
+          confirmationEmailSent: true,
+          confirmationEmailSentAt: new Date().toISOString(),
+          confirmationEmailResult: result
+        });
+        await database.updateEmailJob(job.id, { status: "sent", attempts: Number(job.attempts || 0) + 1, lastError: "" });
+      } catch (error) {
+        const attempts = Number(job.attempts || 0) + 1;
+        const retryMinutes = Math.min(60, 2 ** Math.min(attempts, 6));
+        await database.updateEmailJob(job.id, {
+          status: "pending",
+          attempts,
+          nextAttemptAt: new Date(Date.now() + retryMinutes * 60_000).toISOString(),
+          lastError: error.message
+        });
+      }
+    }
+  } finally {
+    processingEmailJobs = false;
+  }
+}
+
+let reconcilingPayments = false;
+
+async function reconcilePendingPayments() {
+  if (reconcilingPayments || !process.env.STRIPE_SECRET_KEY) return 0;
+  reconcilingPayments = true;
+  let recovered = 0;
+  try {
+    const pending = (await database.getOrders()).filter((order) => order.paymentStatus === "Pending" && order.stripeSessionId);
+    for (const order of pending.slice(0, 25)) {
+      try {
+        const session = await verifyStripeCheckoutSession(order.stripeSessionId, order.id);
+        await confirmPaidOrder(order.id, { stripeSessionId: session.id, stripePaymentIntentId: session.payment_intent || "" });
+        recovered += 1;
+      } catch (error) {
+        if (!/Payment has not been confirmed/.test(error.message)) console.error(`Payment reconciliation failed for ${order.id}:`, error.message);
+      }
+    }
+    return recovered;
+  } finally {
+    reconcilingPayments = false;
+  }
 }
 
 function readBody(req) {
@@ -743,6 +859,24 @@ function readRawBody(req) {
 }
 
 async function handleApi(req, res, url) {
+  if (url.pathname === "/api/health" && req.method === "GET") {
+    try {
+      const databaseReady = await database.healthCheck();
+      return sendJson(res, databaseReady ? 200 : 503, {
+        status: databaseReady ? "ok" : "unavailable",
+        database: databaseReady ? "connected" : "unavailable",
+        uptimeSeconds: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString()
+      });
+    } catch {
+      return sendJson(res, 503, {
+        status: "unavailable",
+        database: "unavailable",
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
   if (url.pathname === "/api/admin/login" && req.method === "POST") {
     const body = await readBody(req);
     if (body?.email === adminEmail && verifyPassword(body?.password, adminPasswordHash)) {
@@ -961,6 +1095,7 @@ async function handleApi(req, res, url) {
         return sendJson(res, 409, { error: "This order is already packed and cannot be cancelled." });
       }
       if (status === "Cancelled") return sendJson(res, 200, order);
+      await database.releaseOrderReservation(order.id, "customer-cancelled");
       const updated = await database.updateOrder(order.id, { deliveryStatus: "Cancelled", cancelledAt: new Date().toISOString() });
       const emailResult = await sendOrderNotification(updated, "cancelled");
       await customerActionNotification({
@@ -1175,6 +1310,9 @@ async function handleApi(req, res, url) {
         const previous = previousOrders.get(order.id);
         const previousStatus = previous?.deliveryStatus || "New order";
         const nextStatus = order.deliveryStatus || "New order";
+        if (nextStatus === "Cancelled" && previousStatus !== "Cancelled") {
+          await database.releaseOrderReservation(order.id, "admin-cancelled");
+        }
         const notificationType = previousStatus !== nextStatus ? deliveryNotificationType(nextStatus) : "";
         if (!notificationType) continue;
         const savedOrder = await database.getOrderById(order.id);
@@ -1188,8 +1326,15 @@ async function handleApi(req, res, url) {
     }
     if (req.method === "POST") {
       const incomingOrder = await readBody(req);
-      if (!isFrenchDeliveryAddress(incomingOrder?.customer?.address)) {
-        return sendJson(res, 400, { error: "Sorry, this address is not serviceable. We currently deliver only within France." });
+      await database.releaseExpiredReservations();
+      let verifiedAddress;
+      try {
+        verifiedAddress = await validateFrenchDeliveryAddress(incomingOrder?.customer?.address);
+      } catch {
+        return sendJson(res, 503, { error: "French address validation is temporarily unavailable. Please try again shortly." });
+      }
+      if (!verifiedAddress) {
+        return sendJson(res, 400, { error: "Sorry, this address could not be verified for delivery in France. Enter and select a complete French address." });
       }
       const catalog = new Map((await database.getProducts()).map((product) => [product.id, product]));
       const requestedItems = Array.isArray(incomingOrder?.items) ? incomingOrder.items : [];
@@ -1207,7 +1352,14 @@ async function handleApi(req, res, url) {
         return sendJson(res, 400, { error: "Minimum order value is €20." });
       }
       const orderId = `IDK-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-      const savedOrder = await database.saveOrder({ ...incomingOrder, id: orderId, items: validatedItems, ...charges });
+      const savedOrder = await database.saveOrder({
+        ...incomingOrder,
+        id: orderId,
+        customer: { ...incomingOrder.customer, address: verifiedAddress.label },
+        deliveryAddressValidation: verifiedAddress,
+        items: validatedItems,
+        ...charges
+      });
       try {
         const stripeSession = await createStripeCheckout(savedOrder);
         await database.updateOrder(savedOrder.id, { stripeSessionId: stripeSession.id || "" });
@@ -1309,21 +1461,44 @@ function serveStatic(req, res, url) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
+  const requestId = String(req.headers["x-request-id"] || crypto.randomUUID());
+  res.setHeader("X-Request-Id", requestId);
+  applySecurityHeaders(res);
   try {
     if (url.pathname.startsWith("/api/")) {
       if (!allowRequest(req, url.pathname)) return sendJson(res, 429, { error: "Too many requests. Please try again shortly." });
-      res.setHeader("X-Content-Type-Options", "nosniff");
-      res.setHeader("Referrer-Policy", "same-origin");
       return await handleApi(req, res, url);
     }
     serveStatic(req, res, url);
   } catch (error) {
+    console.error(JSON.stringify({
+      level: "error",
+      requestId,
+      method: req.method,
+      path: url.pathname,
+      status: error.statusCode || 500,
+      message: error.message,
+      timestamp: new Date().toISOString()
+    }));
     sendJson(res, error.statusCode || 500, { error: error.statusCode ? error.message : "Server error", detail: error.message });
   }
 });
 
 async function startServer() {
   await database.initDatabase();
+  await reconcilePendingPayments();
+  await database.releaseExpiredReservations();
+  const reservationCleanup = setInterval(() => {
+    reconcilePendingPayments()
+      .then(() => database.releaseExpiredReservations())
+      .catch((error) => console.error("Payment/reservation cleanup failed:", error.message));
+  }, 60_000);
+  reservationCleanup.unref();
+  await processEmailJobs();
+  const emailRetry = setInterval(() => {
+    processEmailJobs().catch((error) => console.error("Email retry failed:", error.message));
+  }, 60_000);
+  emailRetry.unref();
   server.listen(port, host, () => {
     console.log(`Idukki Spices running at http://${host}:${port}`);
   });

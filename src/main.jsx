@@ -30,10 +30,10 @@ import plantationFlowerPods from "../assets/plantation-cardamom-flower-pods.jpeg
 import plantationPath from "../assets/plantation-cardamom-path.jpeg";
 import plantationStoneWall from "../assets/plantation-cardamom-stone-wall.jpeg";
 import plantationBlossomClose from "../assets/plantation-cardamom-blossom-close.jpeg";
-import aboutHeroCardamomKerala from "../assets/about-hero-cardamom-kerala.png";
-import aboutProductBowls from "../assets/about-product-bowls.png";
-import aboutProductsPouches from "../assets/about-products-pouches.png";
-import aboutStorySpicePlate from "../assets/about-story-spice-plate.png";
+import aboutHeroCardamomKerala from "../assets/about-hero-cardamom-kerala.webp";
+import aboutProductBowls from "../assets/about-product-bowls.webp";
+import aboutProductsPouches from "../assets/about-products-pouches.webp";
+import aboutStorySpicePlate from "../assets/about-story-spice-plate.webp";
 import homeSlideBayLeaves from "../assets/home-slide-bay-leaves.jpg";
 import homeSlideStarAnise from "../assets/home-slide-star-anise.jpg";
 import homeSlideCloves from "../assets/home-slide-cloves.jpg";
@@ -149,19 +149,19 @@ const pageFromPath = () => {
   return clean.replace(".html", "") || "index";
 };
 
-const siteUrl = "https://idukkispices.com";
+const siteUrl = "https://theidukkispices.com";
 const seoPages = {
   index: {
     title: "Idukki Spices | Kerala Spices Delivered in France",
     description: "Shop Idukki Spices for Kerala-inspired special graded 7mm cardamom, black pepper, cloves, cinnamon, star anise, bay leaves, and mixed spices with secure online checkout.",
     path: "/",
-    image: "/assets/hero-idukki-to-europe.png"
+    image: "/assets/hero-idukki-to-europe.jpg"
   },
   about: {
     title: "About Idukki Spices | Kerala Spice Story",
     description: "Learn how Idukki Spices selects, sorts, packs, and delivers aromatic Kerala-inspired spices for everyday kitchens.",
     path: "/about.html",
-    image: "/assets/spice-story-kitchen.png"
+    image: "/assets/spice-story-kitchen.jpg"
   },
   shop: {
     title: "Shop Kerala Spices | Idukki Spices",
@@ -667,18 +667,17 @@ function useAddressSuggestions(value) {
     const timer = window.setTimeout(async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams({
-          format: "jsonv2",
-          addressdetails: "1",
-          countrycodes: "fr",
-          limit: "5",
-          q: query
-        });
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+        const params = new URLSearchParams({ q: query, index: "address", limit: "5" });
+        const response = await fetch(`https://data.geopf.fr/geocodage/search?${params.toString()}`, {
           signal: controller.signal
         });
         const data = await response.json();
-        setSuggestions(Array.isArray(data) ? data.map((item) => item.display_name).filter(Boolean) : []);
+        setSuggestions(Array.isArray(data?.features)
+          ? data.features.map((item) => ({
+            label: item.properties?.label,
+            cityCode: item.properties?.citycode
+          })).filter((item) => item.label)
+          : []);
       } catch (error) {
         if (error.name !== "AbortError") setSuggestions([]);
       } finally {
@@ -691,11 +690,6 @@ function useAddressSuggestions(value) {
     };
   }, [value]);
   return { suggestions, setSuggestions, loading };
-}
-
-function isFrenchDeliveryAddress(value) {
-  const address = String(value || "").trim();
-  return /\bfrance\b/i.test(address) || /\b(?:0[1-9]|[1-8]\d|9[0-5])\d{3}\b/.test(address);
 }
 
 function useScrollReveal(scopeKey) {
@@ -1989,11 +1983,6 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
     event.preventDefault();
     if (!cartItems.length) return setNote("Add products before checkout.");
     if (!canCheckout) return setNote("Add more spices to reach the €20 minimum order.");
-    if (!isFrenchDeliveryAddress(form.address)) {
-      return setNote(lang === "fr"
-        ? "Désolé, cette adresse n’est pas desservie. Nous livrons uniquement en France."
-        : "Sorry, this address is not serviceable. We currently deliver only within France.");
-    }
     const order = {
       id: `IDK-${Date.now().toString().slice(-6)}`,
       customer: form,
@@ -3105,9 +3094,8 @@ function Field({ label, value, onChange, type = "text", placeholder = "", requir
 
 function AddressField({ value, onChange, required = false, franceOnly = false, lang = "en" }) {
   const { suggestions, setSuggestions, loading } = useAddressSuggestions(value);
-  const unsupported = franceOnly && String(value || "").trim().length >= 5 && !isFrenchDeliveryAddress(value);
   const choose = (address) => {
-    onChange(address);
+    onChange(address.label);
     setSuggestions([]);
   };
   return (
@@ -3123,19 +3111,17 @@ function AddressField({ value, onChange, required = false, franceOnly = false, l
         />
       </div>
       {franceOnly && (
-        <p className={unsupported ? "address-service-message error" : "address-service-message"}>
-          {unsupported
-            ? (lang === "fr" ? "Désolé, cette adresse n’est pas desservie. Livraison uniquement en France." : "Sorry, this address is not serviceable. Delivery is available only in France.")
-            : (lang === "fr" ? "Livraison disponible uniquement en France." : "Delivery is available only within France.")}
+        <p className="address-service-message">
+          {lang === "fr" ? "Saisissez puis sélectionnez une adresse française vérifiée." : "Enter and select a verified French address."}
         </p>
       )}
       {(loading || suggestions.length > 0) && (
         <div className="address-suggestions">
           {loading && <p>Searching addresses...</p>}
           {suggestions.map((address) => (
-            <button key={address} type="button" onClick={() => choose(address)}>
+            <button key={`${address.label}-${address.cityCode || ""}`} type="button" onClick={() => choose(address)}>
               <MapPin size={16} />
-              <span>{address}</span>
+              <span>{address.label}</span>
             </button>
           ))}
         </div>

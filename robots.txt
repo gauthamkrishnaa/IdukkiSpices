@@ -8,4 +8,4 @@ Disallow: /cart.html
 Disallow: /order-detail.html
 Disallow: /payment-success.html
 
-Sitemap: https://idukkispices.com/sitemap.xml
+Sitemap: https://theidukkispices.com/sitemap.xml

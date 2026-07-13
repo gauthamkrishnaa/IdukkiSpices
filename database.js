@@ -33,6 +33,10 @@ function one(sql) {
   return all(sql)[0] || null;
 }
 
+function healthCheck() {
+  return one("SELECT 1 AS ok;")?.ok === 1;
+}
+
 function loadSeedProducts() {
   const seedFile = path.join(seedDataDir, "products.json");
   if (!fs.existsSync(seedFile)) return [];
@@ -156,6 +160,18 @@ function initDatabase() {
       status TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS email_jobs (
+      id TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      type TEXT NOT NULL,
+      order_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      next_attempt_at TEXT NOT NULL,
+      last_error TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS otp_challenges (
       purpose TEXT NOT NULL,
       identity TEXT NOT NULL,
@@ -244,7 +260,13 @@ function deleteOrderById(id) {
 function updateOrderPaymentStatus(id, paymentStatus, changes = {}) {
   const order = getOrderById(id);
   if (!order) return null;
-  const updated = { ...order, ...changes, paymentStatus };
+  if (paymentStatus === "Paid" && order.reservationStatus === "released") {
+    const error = new Error("This checkout reservation has expired. Start a new checkout.");
+    error.statusCode = 409;
+    throw error;
+  }
+  const reservationChanges = paymentStatus === "Paid" ? { reservationStatus: "consumed", reservationConsumedAt: new Date().toISOString() } : {};
+  const updated = { ...order, ...changes, ...reservationChanges, paymentStatus };
   run(orderInsertSql(updated));
   return updated;
 }
@@ -533,9 +555,58 @@ function getOutbox() {
   `);
 }
 
+function queueEmailJob({ id, type, orderId }) {
+  const timestamp = new Date().toISOString();
+  run(`
+    INSERT OR IGNORE INTO email_jobs
+      (id, created_at, updated_at, type, order_id, status, attempts, next_attempt_at, last_error)
+    VALUES
+      (${sqlValue(id)}, ${sqlValue(timestamp)}, ${sqlValue(timestamp)}, ${sqlValue(type)},
+       ${sqlValue(orderId)}, 'pending', 0, ${sqlValue(timestamp)}, NULL);
+  `);
+  return one(`SELECT id, type, order_id AS orderId, status, attempts, next_attempt_at AS nextAttemptAt, last_error AS lastError FROM email_jobs WHERE id = ${sqlValue(id)};`);
+}
+
+function getDueEmailJobs(limit = 10) {
+  return all(`
+    SELECT id, type, order_id AS orderId, status, attempts,
+           next_attempt_at AS nextAttemptAt, last_error AS lastError
+    FROM email_jobs
+    WHERE status = 'pending' AND next_attempt_at <= ${sqlValue(new Date().toISOString())}
+    ORDER BY created_at ASC
+    LIMIT ${Math.max(1, Number(limit) || 10)};
+  `);
+}
+
+function updateEmailJob(id, changes = {}) {
+  const current = one(`SELECT * FROM email_jobs WHERE id = ${sqlValue(id)};`);
+  if (!current) return null;
+  const next = {
+    status: changes.status ?? current.status,
+    attempts: changes.attempts ?? current.attempts,
+    nextAttemptAt: changes.nextAttemptAt ?? current.next_attempt_at,
+    lastError: changes.lastError ?? current.last_error
+  };
+  run(`UPDATE email_jobs SET updated_at = ${sqlValue(new Date().toISOString())}, status = ${sqlValue(next.status)}, attempts = ${sqlValue(next.attempts)}, next_attempt_at = ${sqlValue(next.nextAttemptAt)}, last_error = ${sqlValue(next.lastError)} WHERE id = ${sqlValue(id)};`);
+  return { id, type: current.type, orderId: current.order_id, ...next };
+}
+
 function saveOrder(order) {
-  const normalized = normalizeOrder(order);
+  const normalized = normalizeOrder({
+    ...order,
+    reservationStatus: "active",
+    reservationExpiresAt: order.reservationExpiresAt || new Date(Date.now() + 35 * 60_000).toISOString()
+  });
   const products = getProducts();
+
+  for (const item of normalized.items || []) {
+    const product = products.find((entry) => entry.id === item.id);
+    if (!product || Number(product.stock || 0) < Number(item.qty || 0)) {
+      const error = new Error(`${product?.name || "A product"} no longer has enough stock.`);
+      error.statusCode = 409;
+      throw error;
+    }
+  }
 
   run(`
     BEGIN;
@@ -563,9 +634,39 @@ function saveOrder(order) {
   return normalized;
 }
 
+function releaseOrderReservation(id, reason = "released") {
+  const order = getOrderById(id);
+  if (!order || !["active", "consumed"].includes(order.reservationStatus)) return order || null;
+  const products = getProducts();
+  const updated = {
+    ...order,
+    reservationStatus: "released",
+    reservationReleasedAt: new Date().toISOString(),
+    reservationReleaseReason: reason
+  };
+  run(`
+    BEGIN;
+    ${orderInsertSql(updated)}
+    ${products.map((product) => {
+      const item = (order.items || []).find((entry) => entry.id === product.id);
+      return item ? `UPDATE products SET stock = stock + ${sqlValue(Number(item.qty || 0))} WHERE id = ${sqlValue(product.id)};` : "";
+    }).join("\n")}
+    COMMIT;
+  `);
+  return updated;
+}
+
+function releaseExpiredReservations() {
+  const timestamp = Date.now();
+  const expired = getOrders().filter((order) => order.reservationStatus === "active" && Date.parse(order.reservationExpiresAt || "") <= timestamp);
+  expired.forEach((order) => releaseOrderReservation(order.id, "expired"));
+  return expired.length;
+}
+
 module.exports = {
   dbPath,
   initDatabase,
+  healthCheck,
   getProducts,
   saveProducts,
   getOrders,
@@ -575,6 +676,8 @@ module.exports = {
   updateOrder,
   saveOrders,
   saveOrder,
+  releaseOrderReservation,
+  releaseExpiredReservations,
   getCustomers,
   getCustomerByIdentity,
   registerCustomer,
@@ -593,5 +696,8 @@ module.exports = {
   createContactMessage,
   getContactMessages,
   updateContactMessage,
-  getOutbox
+  getOutbox,
+  queueEmailJob,
+  getDueEmailJobs,
+  updateEmailJob
 };
