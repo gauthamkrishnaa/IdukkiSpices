@@ -409,6 +409,14 @@ nav {
   box-shadow: 0 10px 24px rgba(36, 29, 23, 0.08);
 }
 
+.mobile-menu-button svg {
+  display: block;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  stroke-width: 2.5;
+}
+
 .mobile-header-actions {
   display: none;
   align-items: center;
@@ -4590,8 +4598,45 @@ h3 {
 
   .mobile-cart-link,
   .mobile-menu-button {
-    width: 44px;
-    min-height: 44px;
+    width: 48px;
+    min-height: 48px;
+  }
+
+  .mobile-menu-button svg {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+  }
+
+  .mobile-sidebar {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    gap: 20px;
+    padding: max(20px, env(safe-area-inset-top)) 18px max(20px, env(safe-area-inset-bottom));
+    border-left: 0;
+  }
+
+  .mobile-sidebar-head {
+    min-height: 62px;
+  }
+
+  .mobile-sidebar .compact-brand img {
+    flex-basis: 66px;
+    width: 66px;
+    height: 54px;
+  }
+
+  .mobile-sidebar .compact-brand .brand-wordmark strong,
+  .mobile-sidebar .compact-brand .brand-wordmark em {
+    font-size: 1.2rem;
+  }
+
+  .mobile-sidebar-tools,
+  .mobile-nav a,
+  .mobile-nav > button {
+    min-height: 62px;
+    font-size: 1.12rem;
   }
 }
 
