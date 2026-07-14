@@ -34,18 +34,18 @@ import aboutHeroCardamomKerala from "../assets/about-hero-cardamom-kerala.webp";
 import aboutProductBowls from "../assets/about-product-bowls.webp";
 import aboutProductsPouches from "../assets/about-products-pouches.webp";
 import aboutStorySpicePlate from "../assets/about-story-spice-plate.webp";
-import homeSlideBayLeaves from "../assets/home-slide-bay-leaves.jpg";
-import homeSlideStarAnise from "../assets/home-slide-star-anise.jpg";
-import homeSlideCloves from "../assets/home-slide-cloves.jpg";
-import homeSlideCardamom from "../assets/home-slide-cardamom.jpg";
-import homeSlideCinnamon from "../assets/home-slide-cinnamon.jpg";
-import homeSlideBlackPepper from "../assets/home-slide-black-pepper.jpg";
-import homeSlideMixedSpices from "../assets/home-slide-mixed-spices.jpg";
+import homeSlideBayLeaves from "../assets/home-slide-bay-leaves.webp";
+import homeSlideStarAnise from "../assets/home-slide-star-anise.webp";
+import homeSlideCloves from "../assets/home-slide-cloves.webp";
+import homeSlideCardamom from "../assets/home-slide-cardamom.webp";
+import homeSlideCinnamon from "../assets/home-slide-cinnamon.webp";
+import homeSlideBlackPepper from "../assets/home-slide-black-pepper.webp";
+import homeSlideMixedSpices from "../assets/home-slide-mixed-spices.webp";
 import cardamomPouch3d from "../assets/scroll-3d/cardamom-pouch-3d.webp";
 
 const money = (value) => `€${Number(value || 0).toFixed(2)}`;
 const itemQuantity = (items = []) => items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
-const optimizedProductPath = (image = "") => String(image).replace(/(assets\/product-[^/]+-pack)\.png$/, "$1.jpg");
+const optimizedProductPath = (image = "") => String(image).replace(/(assets\/product-[^/]+-pack)\.(?:png|jpg)$/, "$1.webp");
 const productImageSrc = (image) => /^(?:data:|blob:|https?:)/i.test(String(image || ""))
   ? String(image)
   : `/${optimizedProductPath(image).replace(/^\//, "")}`;
@@ -1005,7 +1005,7 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
   return (
     <header className="topbar">
       <a className="brand" href="/" onClick={(event) => follow(event, "index")}>
-        <img src="/assets/idukki-spices-logo-transparent.png" alt="Idukki Spices" />
+        <img src="/assets/idukki-spices-logo-header.webp" alt="Idukki Spices" width="280" height="187" fetchPriority="high" />
         <span className="brand-wordmark"><strong>Idukki</strong><em>Spices</em></span>
       </a>
       {navLinks("desktop-nav")}
@@ -1030,7 +1030,7 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
           <aside className="mobile-sidebar" role="dialog" aria-modal="true" aria-label={lang === "fr" ? "Menu du site" : "Site menu"} onClick={(event) => event.stopPropagation()}>
             <div className="mobile-sidebar-head">
               <div className="brand compact-brand">
-                <img src="/assets/idukki-spices-logo-transparent.png" alt="" />
+                <img src="/assets/idukki-spices-logo-header.webp" alt="" width="280" height="187" />
                 <span className="brand-wordmark"><strong>Idukki</strong><em>Spices</em></span>
               </div>
               <button className="mobile-menu-button close" onClick={() => setMenuOpen(false)} type="button" aria-label={lang === "fr" ? "Fermer le menu" : "Close menu"}>
@@ -1584,12 +1584,12 @@ function About({ lang = "fr" }) {
   const reasonIcons = [<Leaf size={24} />, <Sparkles size={24} />, <Package size={24} />, <ShieldCheck size={24} />];
   const reasons = copy.reasons.map((reason, index) => ({ ...reason, icon: reasonIcons[index] }));
   const productImages = [
-    "/assets/product-green-cardamom-pack.jpg",
-    "/assets/product-black-pepper-pack.jpg",
-    "/assets/product-cloves-pack.jpg",
-    "/assets/product-cinnamon-pack.jpg",
-    "/assets/product-bay-leaves-pack.jpg",
-    "/assets/product-star-anise-pack.jpg"
+    "/assets/product-green-cardamom-pack.webp",
+    "/assets/product-black-pepper-pack.webp",
+    "/assets/product-cloves-pack.webp",
+    "/assets/product-cinnamon-pack.webp",
+    "/assets/product-bay-leaves-pack.webp",
+    "/assets/product-star-anise-pack.webp"
   ];
   const productHighlights = copy.products.map((name, index) => ({ name, image: productImages[index] }));
   const plantationImages = [plantationFlowerPods, plantationPath, plantationStoneWall, plantationBlossomClose];
@@ -1721,7 +1721,7 @@ function Contact() {
           <h1>Need help with an order or product?</h1>
           <p>Questions, delivery help, product details, or business orders. Send a message and we will reply as soon as possible.</p>
         </div>
-        <img src="/assets/idukki-plantation-wide.jpg" alt="Idukki spice plantation" loading="lazy" decoding="async" />
+        <img src="/assets/idukki-plantation-wide.webp" alt="Idukki spice plantation" loading="lazy" decoding="async" />
       </section>
       <section className="section contact-grid">
         <div className="contact-details">

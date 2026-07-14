@@ -826,7 +826,7 @@ nav b {
   border-radius: 24px;
   background:
     linear-gradient(145deg, rgba(35, 65, 42, 0.93), rgba(111, 68, 34, 0.82)),
-    url("/assets/idukki-plantation-wide.jpg") center / cover;
+    url("/assets/idukki-plantation-wide.webp") center / cover;
   color: #fff;
   box-shadow: var(--shadow);
   display: flex;
@@ -986,7 +986,7 @@ nav b {
   inset: 0;
   z-index: -1;
   opacity: calc(.24 + var(--hero-scroll) * .35);
-  background: url("/assets/idukki-plantation-wide.jpg") center / cover;
+  background: url("/assets/idukki-plantation-wide.webp") center / cover;
   transform: scale(1.08);
 }
 
@@ -3312,7 +3312,7 @@ h3 {
   align-items: center;
   background:
     linear-gradient(135deg, rgba(36, 29, 23, 0.82), rgba(47, 111, 68, 0.46)),
-    url("/assets/cardamom-bowl.jpg") center / cover fixed;
+    url("/assets/cardamom-bowl.webp") center / cover fixed;
 }
 
 .auth-modern aside img {
@@ -3515,7 +3515,7 @@ h3 {
   padding: 26px;
   background:
     linear-gradient(180deg, rgba(36, 29, 23, 0.94), rgba(47, 74, 45, 0.92)),
-    url("/assets/idukki-plantation-wide.jpg") center / cover;
+    url("/assets/idukki-plantation-wide.webp") center / cover;
   color: #fff;
 }
 
@@ -4717,6 +4717,20 @@ h3 {
 @media (max-width: 360px) {
   .topbar > .brand span {
     display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  body,
+  body::before {
+    animation: none;
+  }
+
+  .cinematic-product,
+  .hero-card,
+  .about-visual-main,
+  .about-product-orb {
+    animation: none;
   }
 }
 
