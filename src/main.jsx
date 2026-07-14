@@ -64,6 +64,17 @@ const companyContactEmail = "idukkispicesfr@gmail.com";
 const companyContactPhone = "+33 7 82 50 45 14";
 const companyContactLocation = "Paris, France";
 const companyInstagramUrl = "https://www.instagram.com/idukkispicesfr?utm_source=qr";
+const trustedCheckoutHosts = new Set(["checkout.stripe.com"]);
+
+function getTrustedCheckoutUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    if (url.protocol !== "https:" || !trustedCheckoutHosts.has(url.hostname)) return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+}
 
 const countries = [
   ["🇦🇫", "Afghanistan", "+93"], ["🇦🇱", "Albania", "+355"], ["🇩🇿", "Algeria", "+213"], ["🇦🇩", "Andorra", "+376"],
@@ -2002,8 +2013,10 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
     try {
       const saved = await api("/api/orders", { method: "POST", body: JSON.stringify(order) });
       if (saved.stripeSession?.url) {
+        const checkoutUrl = getTrustedCheckoutUrl(saved.stripeSession.url);
+        if (!checkoutUrl) throw new Error("The payment provider returned an invalid checkout address.");
         setCart({});
-        window.location.href = saved.stripeSession.url;
+        window.location.assign(checkoutUrl);
         return;
       }
       setNote(saved.warning || "Order saved, but payment provider needs setup.");

@@ -71,11 +71,14 @@ function applySecurityHeaders(res) {
     "form-action 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https:",
+    "img-src 'self' data: blob:",
     "font-src 'self' data:",
     "connect-src 'self' https://data.geopf.fr",
+    "frame-src 'none'",
+    "child-src 'none'",
     "media-src 'self'",
-    "worker-src 'self' blob:"
+    "worker-src 'self' blob:",
+    "manifest-src 'self'"
   ];
   if (process.env.NODE_ENV === "production") contentSecurityPolicy.push("upgrade-insecure-requests");
   res.setHeader("Content-Security-Policy", contentSecurityPolicy.join("; "));
@@ -86,7 +89,7 @@ function applySecurityHeaders(res) {
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
   res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
   if (process.env.NODE_ENV === "production") {
-    res.setHeader("Strict-Transport-Security", "max-age=31536000");
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }
 }
 
