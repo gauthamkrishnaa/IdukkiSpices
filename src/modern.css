@@ -4720,6 +4720,42 @@ h3 {
   }
 }
 
+/* Final mobile dark-mode specificity fixes (kept after responsive rules). */
+:root[data-theme="dark"] .field,
+:root[data-theme="dark"] .field > span,
+:root[data-theme="dark"] .field label {
+  color: #f4ecdf;
+}
+
+:root[data-theme="dark"] .mobile-nav a.active,
+:root[data-theme="dark"] .mobile-nav a:hover,
+:root[data-theme="dark"] .mobile-nav > button.active,
+:root[data-theme="dark"] .mobile-nav > button:hover {
+  border-color: rgba(139, 207, 145, 0.5);
+  background: #dcefd9;
+  color: #16462b;
+}
+
+:root[data-theme="dark"] .mobile-header-actions .notification-bell,
+:root[data-theme="dark"] .mobile-header-actions .notification-bell:hover,
+:root[data-theme="dark"] .mobile-header-actions .notification-bell.has-unread {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: #18251d;
+  color: #fff8ea;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
+:root[data-theme="dark"] .mobile-header-actions .notification-bell b {
+  border-color: #18251d;
+  background: #8bcf91;
+  color: #102013;
+}
+
+:root[data-theme="dark"] .footer-contact a,
+:root[data-theme="dark"] .footer-contact span {
+  color: #e3d9cb;
+}
+
 @media (max-width: 640px) {
   .admin-notification-popover {
     position: fixed;
