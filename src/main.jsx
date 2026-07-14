@@ -735,7 +735,9 @@ function App() {
     const savedLanguage = localStorage.getItem("idukki-language");
     return savedLanguage === "en" || savedLanguage === "fr" ? savedLanguage : "fr";
   });
-  const [theme, setTheme] = useState(() => localStorage.getItem(themeKey) || "light");
+  const [theme, setTheme] = useState(() => (
+    customer ? sessionStorage.getItem(themeKey) || "light" : "light"
+  ));
   const [pageBusy, setPageBusy] = useState(false);
   const [customerNotifications, setCustomerNotifications] = useState([]);
   const [cartToast, setCartToast] = useState(null);
@@ -756,9 +758,17 @@ function App() {
   }, [page, products]);
 
   useEffect(() => {
-    localStorage.setItem(themeKey, theme);
+    // Remove the old device-wide preference used by earlier versions.
+    localStorage.removeItem(themeKey);
+    if (!customer) {
+      sessionStorage.removeItem(themeKey);
+      document.documentElement.dataset.theme = "light";
+      if (theme !== "light") setTheme("light");
+      return;
+    }
+    sessionStorage.setItem(themeKey, theme);
     document.documentElement.dataset.theme = theme;
-  }, [theme]);
+  }, [theme, customer]);
 
   useEffect(() => {
     localStorage.setItem(cartKey, JSON.stringify(cart));
@@ -964,6 +974,7 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
   const links = [["index", "Home"], ["about", "About"], ["shop", "Shop"], ["cart", "Cart"], ["contact", "Contact"], ["auth", customer ? "My account" : "Login"]];
   const mobileLinks = [["auth", customer ? "My account" : "Login"], ["index", "Home"], ["about", "About"], ["shop", "Shop"], ["contact", "Contact"]];
   const pathFor = (id) => id === "index" ? "/" : `/${id}.html`;
+  const menuLabel = (label) => lang === "fr" ? translations[label] || label : label;
   const follow = (event, id) => {
     event.preventDefault();
     setMenuOpen(false);
@@ -973,7 +984,7 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
     <nav className={className}>
       {items.map(([id, label]) => (
         <a className={page === id ? "active" : ""} href={pathFor(id === "auth" && customer ? "account" : id)} key={id} onClick={(event) => follow(event, id)}>
-          {label}{id === "cart" && <b>{cartCount}</b>}
+          {menuLabel(label)}{id === "cart" && <b>{cartCount}</b>}
         </a>
       ))}
       {customer && showNotifications && (
@@ -1010,19 +1021,19 @@ function Header({ go, page, cartCount, customer, lang, setLang, notifications = 
             onClear={onClearNotifications}
           />
         )}
-        <button className="mobile-menu-button" onClick={() => setMenuOpen(true)} type="button" aria-label="Open menu">
+        <button className="mobile-menu-button" onClick={() => setMenuOpen(true)} type="button" aria-label={lang === "fr" ? "Ouvrir le menu" : "Open menu"}>
           <Menu size={24} />
         </button>
       </div>
       {menuOpen && (
         <div className="mobile-sidebar-backdrop" role="presentation" onClick={() => setMenuOpen(false)}>
-          <aside className="mobile-sidebar" role="dialog" aria-modal="true" aria-label="Site menu" onClick={(event) => event.stopPropagation()}>
+          <aside className="mobile-sidebar" role="dialog" aria-modal="true" aria-label={lang === "fr" ? "Menu du site" : "Site menu"} onClick={(event) => event.stopPropagation()}>
             <div className="mobile-sidebar-head">
               <div className="brand compact-brand">
                 <img src="/assets/idukki-spices-logo-transparent.png" alt="" />
                 <span className="brand-wordmark"><strong>Idukki</strong><em>Spices</em></span>
               </div>
-              <button className="mobile-menu-button close" onClick={() => setMenuOpen(false)} type="button" aria-label="Close menu">
+              <button className="mobile-menu-button close" onClick={() => setMenuOpen(false)} type="button" aria-label={lang === "fr" ? "Fermer le menu" : "Close menu"}>
                 <X size={24} />
               </button>
             </div>
@@ -2196,8 +2207,10 @@ function Account({ customer, setCustomer, setCart, go, lang, theme, setTheme, ad
     sessionStorage.removeItem(customerKey);
     sessionStorage.removeItem(customerDataKey);
     sessionStorage.removeItem(accountSectionKey);
+    sessionStorage.removeItem(themeKey);
     localStorage.removeItem(cartKey);
     setCart({});
+    setTheme("light");
     setCustomer(null);
   };
   useEffect(() => {

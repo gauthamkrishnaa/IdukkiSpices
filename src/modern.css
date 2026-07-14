@@ -55,6 +55,20 @@ body::before {
   pointer-events: none;
 }
 
+:root[data-theme="dark"] body {
+  background-color: #131c16;
+  background-image:
+    radial-gradient(circle at 10% 12%, rgba(183, 132, 55, 0.12) 0 8%, transparent 30%),
+    radial-gradient(circle at 88% 18%, rgba(74, 139, 87, 0.16) 0 10%, transparent 32%),
+    radial-gradient(circle at 76% 84%, rgba(53, 104, 66, 0.12) 0 9%, transparent 31%);
+}
+
+:root[data-theme="dark"] body::before {
+  background:
+    conic-gradient(from 40deg at 25% 40%, transparent, rgba(193, 138, 49, 0.055), transparent 30%),
+    conic-gradient(from 210deg at 75% 58%, transparent, rgba(74, 139, 87, 0.075), transparent 32%);
+}
+
 @keyframes ambient-spice-background {
   0% { background-position: 0% 0%, 100% 0%, 100% 100%, 0% 100%; }
   50% { background-position: 14% 20%, 82% 15%, 88% 78%, 12% 86%; }
@@ -2362,6 +2376,7 @@ h3 {
 
 .counter.wide {
   width: min(220px, 100%);
+  grid-template-columns: 48px minmax(54px, 1fr) 48px;
   margin-top: 16px;
 }
 
@@ -3204,6 +3219,65 @@ h3 {
   border-color: var(--line);
   background: #18251d;
   color: #f7efe2;
+}
+
+/* Unified customer-facing dark surfaces and feedback states. */
+:root[data-theme="dark"] .quick-view,
+:root[data-theme="dark"] .cart-toast,
+:root[data-theme="dark"] .settings-card,
+:root[data-theme="dark"] .address-suggestions,
+:root[data-theme="dark"] .contact-details article {
+  border-color: rgba(232, 241, 230, 0.16);
+  background: #1e2c22;
+  color: #f8f1e6;
+}
+
+:root[data-theme="dark"] .quick-view > div > p:not(.pill),
+:root[data-theme="dark"] .quick-meta span,
+:root[data-theme="dark"] .cart-toast span,
+:root[data-theme="dark"] .contact-details span {
+  color: #d4c9bb;
+}
+
+:root[data-theme="dark"] .cart-toast {
+  border-color: rgba(139, 207, 145, 0.42);
+  background: #223629;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.42);
+}
+
+:root[data-theme="dark"] .cart-toast svg,
+:root[data-theme="dark"] .cart-toast strong,
+:root[data-theme="dark"] .quick-meta strong {
+  color: #f8f1e6;
+}
+
+:root[data-theme="dark"] .quick-view img {
+  background: #eee4d4;
+}
+
+:root[data-theme="dark"] .modal-close {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #304436;
+  color: #fff8ea;
+}
+
+:root[data-theme="dark"] .counter {
+  border-color: rgba(139, 207, 145, 0.42);
+  background: #142019;
+}
+
+:root[data-theme="dark"] .counter .quantity-input {
+  background: #142019;
+  color: #fff8ea;
+}
+
+:root[data-theme="dark"] .primary:disabled,
+:root[data-theme="dark"] .product-card footer button:disabled {
+  background: #4c6f53;
+  color: #dce8dc;
+  box-shadow: none;
+  opacity: 1;
+  filter: saturate(0.65);
 }
 
 :root[data-theme="dark"] .about-process-gallery figure:nth-child(4) img {
@@ -4880,6 +4954,15 @@ h3 {
 
   .buy-controls {
     justify-items: stretch;
+  }
+
+  .buy-controls .counter {
+    width: 100%;
+    grid-template-columns: 58px minmax(54px, 1fr) 58px;
+  }
+
+  .buy-controls .quantity-input {
+    width: 100%;
   }
 
   .cart-line img,
