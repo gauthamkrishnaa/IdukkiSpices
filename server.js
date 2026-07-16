@@ -224,6 +224,21 @@ function orderNotificationEmail(order, type) {
         "Idukki Spices"
       ]
     },
+    readyForPickup: {
+      subject: `Commande prête à être retirée ${order.id}`,
+      lines: [
+        `Bonjour ${customerName},`,
+        "",
+        `Votre commande ${order.id} est prête à être retirée.`,
+        "",
+        `Adresse de retrait: ${order.pickupAddress || PICKUP_ADDRESS}`,
+        "",
+        "Merci de présenter votre numéro de commande lors du retrait.",
+        "",
+        "Merci,",
+        "Idukki Spices"
+      ]
+    },
     shipped: {
       subject: `Commande expédiée ${order.id}`,
       lines: [
@@ -291,6 +306,7 @@ async function customerActionNotification({ type, title, body, order = null, cus
 function deliveryNotificationType(status) {
   return {
     Packed: "packed",
+    "Ready to collect": "readyForPickup",
     Shipped: "shipped",
     Delivered: "delivered"
   }[status] || "";

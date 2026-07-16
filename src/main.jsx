@@ -2540,7 +2540,7 @@ function Admin({ products, setProducts }) {
     .reduce((sum, order) => sum + Number(order.total || 0), 0);
   const revenue = activePaidOrders
     .reduce((sum, order) => sum + Number(order.total || 0), 0);
-  const deliveryStatuses = ["New order", "Processing", "Packed", "Shipped", "Delivered", "Cancelled"];
+  const deliveryStatuses = ["New order", "Processing", "Packed", "Ready to collect", "Collected", "Shipped", "Delivered", "Cancelled"];
   const visibleOrders = orders.filter((order) => (order.deliveryStatus || "New order") === activeOrderStatus);
   const unreadMessages = messages.filter((message) => message.status !== "Replied").length;
   const deleteOrder = async (order) => {
@@ -2904,8 +2904,8 @@ function AdminOrderRow({ order, orders, setOrders, onDelete, onApproveRefund, on
           <option>New order</option>
           <option>Processing</option>
           <option>Packed</option>
-          <option>Shipped</option>
-          <option>Delivered</option>
+          {order.deliveryMethod === "pickup" ? <option>Ready to collect</option> : <option>Shipped</option>}
+          <option>{order.deliveryMethod === "pickup" ? "Collected" : "Delivered"}</option>
           <option>Cancelled</option>
         </select>
         <button className="primary small" onClick={save} type="button">Update</button>
@@ -3104,7 +3104,7 @@ function OrderCard({ order, detailed = false, lang, onCancel, onRefund }) {
   const isFrench = lang === "fr";
   const deliveryStatus = order.deliveryStatus || "New order";
   const paymentStatus = order.paymentStatus || "Pending";
-  const canCancel = !["Packed", "Shipped", "Delivered", "Cancelled"].includes(deliveryStatus);
+  const canCancel = !["Packed", "Ready to collect", "Collected", "Shipped", "Delivered", "Cancelled"].includes(deliveryStatus);
   const canRefund = deliveryStatus === "Cancelled" && paymentStatus === "Paid";
   const showActions = Boolean(onCancel || onRefund);
   return (
