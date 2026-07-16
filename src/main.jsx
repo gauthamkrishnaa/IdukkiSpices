@@ -52,6 +52,7 @@ const productImageSrc = (image) => /^(?:data:|blob:|https?:)/i.test(String(image
 const MIN_ORDER_VALUE = 20;
 const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_FEE = 4.99;
+const PICKUP_ADDRESS = "56 Rue Philippe de Girard, 75018 Paris";
 const cartKey = "idukki-react-cart";
 const adminKey = "idukki-admin-session";
 const customerKey = "idukki-customer-session";
@@ -637,8 +638,9 @@ const localizeProduct = (product, lang) => {
   };
 };
 
-const ShippingPrice = ({ subtotal, shippingFee, lang }) => {
+const ShippingPrice = ({ subtotal, shippingFee, lang, deliveryMethod = "delivery" }) => {
   if (!subtotal) return <strong>{money(0)}</strong>;
+  if (deliveryMethod === "pickup") return <strong>{lang === "fr" ? "Gratuit" : "Free"}</strong>;
   if (shippingFee) return <strong>{money(shippingFee)}</strong>;
   return (
     <strong className="free-shipping-price">
@@ -918,11 +920,14 @@ function App() {
     .filter((product) => cart[product.id])
     .map((product) => ({ ...product, qty: cart[product.id] })), [products, cart]);
   const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
-  const shippingFee = cartTotal > 0 && cartTotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_FEE : 0;
+  const [deliveryMethod, setDeliveryMethod] = useState("delivery");
+  const shippingFee = deliveryMethod === "pickup"
+    ? 0
+    : (cartTotal > 0 && cartTotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_FEE : 0);
   const orderTotal = cartTotal + shippingFee;
   const canCheckout = cartTotal >= MIN_ORDER_VALUE;
 
-  const props = { go, products, cart, setCart, addToCart, cartItems, cartTotal, shippingFee, orderTotal, canCheckout, customer, setCustomer, lang, theme, setTheme, addCustomerNotification, syncCustomerOrderNotifications };
+  const props = { go, products, cart, setCart, addToCart, cartItems, cartTotal, shippingFee, orderTotal, canCheckout, customer, setCustomer, lang, theme, setTheme, deliveryMethod, setDeliveryMethod, addCustomerNotification, syncCustomerOrderNotifications };
   const view = {
     index: <Home {...props} />,
     about: <About lang={lang} />,
@@ -1906,7 +1911,7 @@ function QuickView({ product, cart, addToCart, onClose, lang }) {
   );
 }
 
-function Cart({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, addToCart, setCart, go, lang }) {
+function Cart({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, addToCart, setCart, go, lang, deliveryMethod }) {
   const setCartItemQty = (id, qty) => {
     setCart((current) => ({ ...current, [id]: qty }));
   };
@@ -1935,7 +1940,7 @@ function Cart({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, addT
           <h2>Order summary</h2>
           <p><span>Items</span><strong>{itemQuantity(cartItems)}</strong></p>
           <p><span>Subtotal</span><strong>{money(cartTotal)}</strong></p>
-          <p><span>Shipping</span><ShippingPrice subtotal={cartTotal} shippingFee={shippingFee} lang={lang} /></p>
+          <p><span>{deliveryMethod === "pickup" ? (lang === "fr" ? "Retrait" : "Pickup") : "Shipping"}</span><ShippingPrice subtotal={cartTotal} shippingFee={shippingFee} lang={lang} deliveryMethod={deliveryMethod} /></p>
           <p className="total"><span>Total</span><strong>{money(orderTotal)}</strong></p>
           {!canCheckout && <p className="notice compact">Add more spices to reach the €20 minimum order.</p>}
           <button className="primary" disabled={!canCheckout} onClick={() => go("checkout")} type="button"><Lock size={18} /> Checkout</button>
@@ -1983,7 +1988,7 @@ function DeliveryNotice({ subtotal, lang }) {
   );
 }
 
-function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, setCart, customer, lang }) {
+function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, setCart, customer, lang, deliveryMethod, setDeliveryMethod }) {
   const checkoutParams = new URLSearchParams(window.location.search);
   const cancelledOrderId = checkoutParams.get("payment") === "cancelled" ? checkoutParams.get("order") : "";
   const [form, setForm] = useState(() => ({
@@ -2016,6 +2021,8 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
       paymentMethod: "card",
       paymentStatus: "Pending",
       deliveryStatus: "New order",
+      deliveryMethod,
+      pickupAddress: deliveryMethod === "pickup" ? PICKUP_ADDRESS : "",
       items: cartItems.map(({ id, name, qty, price, image }) => ({ id, name, qty, price, image })),
       subtotal: cartTotal,
       shippingFee,
@@ -2045,11 +2052,33 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
             <p>Your payment was cancelled, so the order has not been confirmed. You can review your details and try payment again.</p>
           </div>
         )}
-        <DeliveryNotice subtotal={cartTotal} lang={lang} />
+        <fieldset className="delivery-methods">
+          <legend>{lang === "fr" ? "Comment souhaitez-vous recevoir votre commande ?" : "How would you like to receive your order?"}</legend>
+          <label className={`delivery-option ${deliveryMethod === "delivery" ? "selected" : ""}`}>
+            <input type="radio" name="deliveryMethod" value="delivery" checked={deliveryMethod === "delivery"} onChange={() => setDeliveryMethod("delivery")} />
+            <Truck size={22} />
+            <span>
+              <strong>{lang === "fr" ? "Livraison à domicile" : "Home delivery"}</strong>
+              <small>{cartTotal >= FREE_SHIPPING_THRESHOLD ? (lang === "fr" ? "Gratuite pour cette commande" : "Free for this order") : (lang === "fr" ? "4,99 € — gratuite dès 50 €" : "€4.99 — free over €50")}</small>
+            </span>
+          </label>
+          <label className={`delivery-option ${deliveryMethod === "pickup" ? "selected" : ""}`}>
+            <input type="radio" name="deliveryMethod" value="pickup" checked={deliveryMethod === "pickup"} onChange={() => setDeliveryMethod("pickup")} />
+            <MapPin size={22} />
+            <span>
+              <strong>{lang === "fr" ? "Retrait gratuit à Paris" : "Free pickup in Paris"}</strong>
+              <small>{PICKUP_ADDRESS}</small>
+            </span>
+          </label>
+        </fieldset>
+        {deliveryMethod === "delivery" && <DeliveryNotice subtotal={cartTotal} lang={lang} />}
+        {deliveryMethod === "pickup" && (
+          <div className="pickup-notice"><MapPin size={20} /><div><strong>{lang === "fr" ? "Aucuns frais de livraison" : "No shipping charge"}</strong><p>{lang === "fr" ? "Nous vous informerons lorsque votre commande sera prête à être retirée." : "We will notify you when your order is ready to collect."}</p></div></div>
+        )}
         <Field label="Full name" value={form.name} onChange={(value) => update("name", value)} required />
         <Field label="Email" type="email" value={form.email} onChange={(value) => update("email", value)} required />
         <Field label="Phone number" type="tel" value={form.phone} onChange={(value) => update("phone", value)} placeholder="Phone number" required />
-        <AddressField value={form.address} onChange={(value) => update("address", value)} required franceOnly lang={lang} />
+        <AddressField value={form.address} onChange={(value) => update("address", value)} required franceOnly={deliveryMethod === "delivery"} lang={lang} />
         <p className="checkout-policy-note">
           {lang === "fr" ? "En continuant, vous acceptez nos " : "By continuing, you agree to our "}
           <a href="/terms.html">{lang === "fr" ? "conditions générales" : "terms and conditions"}</a>
@@ -2066,7 +2095,7 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
           return <p key={item.id}><span>{displayItem.name} x {item.qty}</span><strong>{money(item.price * item.qty)}</strong></p>;
         })}
         <p><span>Subtotal</span><strong>{money(cartTotal)}</strong></p>
-        <p><span>Shipping</span><ShippingPrice subtotal={cartTotal} shippingFee={shippingFee} lang={lang} /></p>
+        <p><span>{deliveryMethod === "pickup" ? (lang === "fr" ? "Retrait" : "Pickup") : "Shipping"}</span><ShippingPrice subtotal={cartTotal} shippingFee={shippingFee} lang={lang} deliveryMethod={deliveryMethod} /></p>
         <p className="total"><span>Total</span><strong>{money(orderTotal)}</strong></p>
       </aside>
     </main>
@@ -2862,6 +2891,7 @@ function AdminOrderRow({ order, orders, setOrders, onDelete, onApproveRefund, on
         <b>{money(order.total)}</b>
       </header>
       <p className="muted">{itemQuantity(order.items)} items · {order.customer?.phone || "No phone saved"}</p>
+      <p className="muted">{order.deliveryMethod === "pickup" ? `Pickup · ${order.pickupAddress || PICKUP_ADDRESS}` : `Home delivery · ${order.customer?.address || "No address saved"}`}</p>
       <div className="admin-order-controls">
         <select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)}>
           <option>Pending</option>
@@ -3023,6 +3053,7 @@ function Invoice() {
             <p>Paiement en ligne sécurisé</p>
           </div>
         </section>
+        {order.deliveryMethod === "pickup" && <p className="invoice-delivery-note"><strong>Retrait gratuit :</strong> {order.pickupAddress || PICKUP_ADDRESS}</p>}
         <div className="invoice-table">
           <div className="invoice-row invoice-row-head">
             <span>Article</span>
@@ -3041,7 +3072,7 @@ function Invoice() {
         </div>
         <section className="invoice-totals">
           <p><span>Sous-total</span><strong>{money(subtotal)}</strong></p>
-          <p><span>Livraison</span><strong>{shippingFee ? money(shippingFee) : "Gratuite"}</strong></p>
+          <p><span>{order.deliveryMethod === "pickup" ? "Retrait" : "Livraison"}</span><strong>{shippingFee ? money(shippingFee) : "Gratuit"}</strong></p>
           <p className="grand-total"><span>Total</span><strong>{money(order.total)}</strong></p>
         </section>
         <footer className="invoice-footer">
@@ -3218,6 +3249,7 @@ const policyContent = {
       sections: [
         ["Order minimum", "The minimum product subtotal required to proceed to checkout is €20."],
         ["Delivery charge", "Shipping costs €4.99 when the product subtotal is below €50. Standard shipping is free when the product subtotal reaches €50."],
+        ["Free pickup in Paris", `Customers may choose pickup before payment. Pickup has no shipping charge and is available at ${PICKUP_ADDRESS}. We will send an update when the order is ready to collect.`],
         ["Order preparation", "Preparation begins after payment is confirmed. You will receive order updates using the contact information supplied during checkout. Any delivery estimate communicated after purchase is an estimate rather than a guaranteed arrival time unless expressly stated otherwise."],
         ["Delivery address", "Please check the recipient name, address, postcode, phone number, and access instructions before payment. Contact us promptly if a correction is needed; changes may not be possible after dispatch."],
         ["Tracking and delays", "Tracking information is provided when available. Carrier delays, severe weather, access problems, or an incorrect address may affect delivery. Contact us if tracking shows an unusual delay and we will investigate with the delivery provider."],
@@ -3274,6 +3306,7 @@ const policyContent = {
       sections: [
         ["Minimum de commande", "Le sous-total minimum de produits pour accéder au paiement est de 20 €."],
         ["Frais de livraison", "La livraison coûte 4,99 € lorsque le sous-total est inférieur à 50 €. La livraison standard est gratuite à partir de 50 €."],
+        ["Retrait gratuit à Paris", `Le retrait peut être choisi avant le paiement et n'entraîne aucuns frais de livraison. Adresse de retrait : ${PICKUP_ADDRESS}. Nous vous informerons lorsque la commande sera prête.`],
         ["Préparation", "La préparation commence après confirmation du paiement. Les mises à jour sont envoyées aux coordonnées fournies. Toute estimation communiquée après l'achat reste indicative, sauf engagement exprès contraire."],
         ["Adresse", "Vérifiez le nom, l'adresse, le code postal, le téléphone et les instructions d'accès avant paiement. Contactez-nous rapidement pour une correction; elle peut devenir impossible après expédition."],
         ["Suivi et retards", "Le suivi est communiqué lorsqu'il est disponible. Le transporteur, la météo, les difficultés d'accès ou une adresse erronée peuvent retarder la livraison. Contactez-nous en cas de retard inhabituel."],

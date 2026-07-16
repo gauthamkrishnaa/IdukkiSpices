@@ -501,6 +501,7 @@ function frenchInvoiceEmail(order) {
   }) : "Date non disponible";
   const subtotal = Number(order.subtotal ?? (order.items || []).reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0));
   const shippingFee = Number(order.shippingFee || 0);
+  const isPickup = order.deliveryMethod === "pickup";
   const lines = [
     "Bonjour,",
     "",
@@ -514,6 +515,7 @@ function frenchInvoiceEmail(order) {
     `${order.customer?.email || order.customerEmail || ""}`,
     `${order.customer?.phone || "Téléphone non renseigné"}`,
     `${order.customer?.address || "Adresse non renseignée"}`,
+    ...(isPickup ? ["", "Mode de remise: Retrait gratuit", `Adresse de retrait: ${order.pickupAddress || "56 Rue Philippe de Girard, 75018 Paris"}`] : ["", "Mode de remise: Livraison à domicile"]),
     "",
     "Articles:"
   ];
@@ -524,7 +526,7 @@ function frenchInvoiceEmail(order) {
   lines.push(
     "",
     `Sous-total: €${subtotal.toFixed(2)}`,
-    `Livraison: ${shippingFee ? `€${shippingFee.toFixed(2)}` : "Gratuite"}`,
+    `${isPickup ? "Retrait" : "Livraison"}: ${shippingFee ? `€${shippingFee.toFixed(2)}` : "Gratuit"}`,
     `Total: €${Number(order.total || 0).toFixed(2)}`,
     "",
     "Merci pour votre achat chez Idukki Spices."

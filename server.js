@@ -41,6 +41,7 @@ const sessionSecret = requiredEnv("SESSION_SECRET");
 const MIN_ORDER_VALUE = 20;
 const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_FEE = 4.99;
+const PICKUP_ADDRESS = "56 Rue Philippe de Girard, 75018 Paris";
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -93,9 +94,9 @@ function applySecurityHeaders(res) {
   }
 }
 
-function calculateOrderCharges(items = []) {
+function calculateOrderCharges(items = [], deliveryMethod = "delivery") {
   const subtotal = items.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || 0)), 0);
-  const shippingFee = subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_FEE : 0;
+  const shippingFee = deliveryMethod === "pickup" ? 0 : (subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_FEE : 0);
   return {
     subtotal: Number(subtotal.toFixed(2)),
     shippingFee: Number(shippingFee.toFixed(2)),
@@ -128,6 +129,7 @@ function frenchInvoiceEmail(order) {
   }) : "Date non disponible";
   const subtotal = Number(order.subtotal ?? (order.items || []).reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0));
   const shippingFee = Number(order.shippingFee || 0);
+  const isPickup = order.deliveryMethod === "pickup";
   const lines = [
     "Bonjour,",
     "",
@@ -141,6 +143,7 @@ function frenchInvoiceEmail(order) {
     `${order.customer?.email || order.customerEmail || ""}`,
     `${order.customer?.phone || "Téléphone non renseigné"}`,
     `${order.customer?.address || "Adresse non renseignée"}`,
+    ...(isPickup ? ["", "Mode de remise: Retrait gratuit", `Adresse de retrait: ${order.pickupAddress || PICKUP_ADDRESS}`] : ["", "Mode de remise: Livraison à domicile"]),
     "",
     "Articles:"
   ];
@@ -151,7 +154,7 @@ function frenchInvoiceEmail(order) {
   lines.push(
     "",
     `Sous-total: €${subtotal.toFixed(2)}`,
-    `Livraison: ${shippingFee ? `€${shippingFee.toFixed(2)}` : "Gratuite"}`,
+    `${isPickup ? "Retrait" : "Livraison"}: ${shippingFee ? `€${shippingFee.toFixed(2)}` : "Gratuit"}`,
     `Total: €${Number(order.total || 0).toFixed(2)}`,
     "",
     "Merci pour votre achat chez Idukki Spices."
@@ -1332,14 +1335,21 @@ async function handleApi(req, res, url) {
     if (req.method === "POST") {
       const incomingOrder = await readBody(req);
       await database.releaseExpiredReservations();
-      let verifiedAddress;
-      try {
-        verifiedAddress = await validateFrenchDeliveryAddress(incomingOrder?.customer?.address);
-      } catch {
-        return sendJson(res, 503, { error: "French address validation is temporarily unavailable. Please try again shortly." });
+      const deliveryMethod = incomingOrder?.deliveryMethod === "pickup" ? "pickup" : "delivery";
+      const customerAddress = String(incomingOrder?.customer?.address || "").trim();
+      if (customerAddress.length < 5) {
+        return sendJson(res, 400, { error: "Please enter your complete address before payment." });
       }
-      if (!verifiedAddress) {
-        return sendJson(res, 400, { error: "Sorry, this address could not be verified for delivery in France. Enter and select a complete French address." });
+      let verifiedAddress = null;
+      if (deliveryMethod === "delivery") {
+        try {
+          verifiedAddress = await validateFrenchDeliveryAddress(customerAddress);
+        } catch {
+          return sendJson(res, 503, { error: "French address validation is temporarily unavailable. Please try again shortly." });
+        }
+        if (!verifiedAddress) {
+          return sendJson(res, 400, { error: "Sorry, this address could not be verified for delivery in France. Enter and select a complete French address." });
+        }
       }
       const catalog = new Map((await database.getProducts()).map((product) => [product.id, product]));
       const requestedItems = Array.isArray(incomingOrder?.items) ? incomingOrder.items : [];
@@ -1352,7 +1362,7 @@ async function handleApi(req, res, url) {
         }
         validatedItems.push({ id: product.id, name: product.name, qty, price: Number(product.price), image: product.image });
       }
-      const charges = calculateOrderCharges(validatedItems);
+      const charges = calculateOrderCharges(validatedItems, deliveryMethod);
       if (charges.subtotal < MIN_ORDER_VALUE) {
         return sendJson(res, 400, { error: "Minimum order value is €20." });
       }
@@ -1360,7 +1370,9 @@ async function handleApi(req, res, url) {
       const savedOrder = await database.saveOrder({
         ...incomingOrder,
         id: orderId,
-        customer: { ...incomingOrder.customer, address: verifiedAddress.label },
+        customer: { ...incomingOrder.customer, address: verifiedAddress?.label || customerAddress },
+        deliveryMethod,
+        pickupAddress: deliveryMethod === "pickup" ? PICKUP_ADDRESS : "",
         deliveryAddressValidation: verifiedAddress,
         items: validatedItems,
         ...charges
