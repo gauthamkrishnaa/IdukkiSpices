@@ -53,6 +53,7 @@ const MIN_ORDER_VALUE = 20;
 const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_FEE = 4.99;
 const PICKUP_ADDRESS = "56 Rue Philippe de Girard, 75018 Paris";
+const checkoutDeliveryMethodKey = "idukki-checkout-delivery-method";
 const cartKey = "idukki-react-cart";
 const adminKey = "idukki-admin-session";
 const customerKey = "idukki-customer-session";
@@ -920,7 +921,12 @@ function App() {
     .filter((product) => cart[product.id])
     .map((product) => ({ ...product, qty: cart[product.id] })), [products, cart]);
   const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
-  const [deliveryMethod, setDeliveryMethod] = useState("delivery");
+  const [deliveryMethod, setDeliveryMethod] = useState(() => (
+    sessionStorage.getItem(checkoutDeliveryMethodKey) === "pickup" ? "pickup" : "delivery"
+  ));
+  useEffect(() => {
+    sessionStorage.setItem(checkoutDeliveryMethodKey, deliveryMethod);
+  }, [deliveryMethod]);
   const shippingFee = deliveryMethod === "pickup"
     ? 0
     : (cartTotal > 0 && cartTotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_FEE : 0);
@@ -943,7 +949,7 @@ function App() {
     account: <Account customer={customer} setCustomer={setCustomer} setCart={setCart} go={go} lang={lang} theme={theme} setTheme={setTheme} addCustomerNotification={addCustomerNotification} syncCustomerOrderNotifications={syncCustomerOrderNotifications} />,
     admin: <Admin products={products} setProducts={setProducts} />,
     invoice: <Invoice />,
-    "payment-success": <PaymentSuccess go={go} addCustomerNotification={addCustomerNotification} />,
+    "payment-success": <PaymentSuccess go={go} setCart={setCart} addCustomerNotification={addCustomerNotification} />,
     "order-detail": <OrderDetail lang={lang} />
   }[page] || <Home {...props} />;
   const isAdminPage = page === "admin" || page === "invoice";
@@ -2033,7 +2039,6 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
       if (saved.stripeSession?.url) {
         const checkoutUrl = getTrustedCheckoutUrl(saved.stripeSession.url);
         if (!checkoutUrl) throw new Error("The payment provider returned an invalid checkout address.");
-        setCart({});
         window.location.assign(checkoutUrl);
         return;
       }
@@ -2974,7 +2979,7 @@ function ProductAdminRow({ product, setProducts, onFeedback }) {
   );
 }
 
-function PaymentSuccess({ go, addCustomerNotification }) {
+function PaymentSuccess({ go, setCart, addCustomerNotification }) {
   const [message, setMessage] = useState("Confirming your payment...");
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -2984,6 +2989,8 @@ function PaymentSuccess({ go, addCustomerNotification }) {
     if (!sessionId) return setMessage("Payment session was missing. Please contact support with your order id.");
     api("/api/payments/confirm", { method: "POST", body: JSON.stringify({ orderId, sessionId }) })
       .then((data) => {
+        setCart({});
+        sessionStorage.removeItem(checkoutDeliveryMethodKey);
         addCustomerNotification?.("Order confirmed", `Payment received for ${orderId}. Your invoice has been sent.`);
         setMessage(data.warning ? `Payment successful, but invoice email needs attention: ${data.warning}` : "Payment successful. Your order confirmation and invoice have been sent.");
       })
