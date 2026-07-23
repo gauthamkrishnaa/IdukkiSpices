@@ -65,7 +65,8 @@ const customerOrderSnapshotKey = "idukki-customer-order-snapshots";
 const companyContactEmail = "idukkispicesfr@gmail.com";
 const companyContactPhone = "+33 7 82 50 45 14";
 const companyContactLocation = "Paris, France";
-const companyInstagramUrl = "https://www.instagram.com/idukkispicesfr?utm_source=qr";
+const companyInstagramUrl = "https://www.instagram.com/idukkispicesfrance/";
+const companyFacebookUrl = "https://www.facebook.com/profile.php?id=61591953571977";
 const trustedCheckoutHosts = new Set(["checkout.stripe.com"]);
 
 function getTrustedCheckoutUrl(value) {
@@ -291,7 +292,7 @@ const updateSeo = (page, products) => {
     logo: new URL("/assets/idukki-spices-logo.jpeg", siteUrl).href,
     email: companyContactEmail,
     telephone: companyContactPhone,
-    sameAs: [companyInstagramUrl]
+    sameAs: [companyInstagramUrl, companyFacebookUrl]
   };
   const scripts = [graph];
   if (page === "shop" && products.length) {
@@ -1762,7 +1763,14 @@ function Contact() {
             <InstagramIcon size={22} />
             <div>
               <span>Instagram</span>
-              <a href={companyInstagramUrl} target="_blank" rel="noreferrer">@idukkispicesfr</a>
+              <a href={companyInstagramUrl} target="_blank" rel="noreferrer">@idukkispicesfrance</a>
+            </div>
+          </article>
+          <article>
+            <FacebookIcon size={22} />
+            <div>
+              <span>Facebook</span>
+              <a href={companyFacebookUrl} target="_blank" rel="noreferrer">Idukki Spices France</a>
             </div>
           </article>
           <article>
@@ -3219,6 +3227,14 @@ function InstagramIcon({ size = 20 }) {
   );
 }
 
+function FacebookIcon({ size = 20 }) {
+  return (
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M13.7 21v-8h2.7l.4-3h-3.1V8.1c0-.9.3-1.5 1.6-1.5H17V3.9c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1V10H8v3h2.6v8h3.1Z" />
+    </svg>
+  );
+}
+
 const policyContent = {
   en: {
     privacy: {
@@ -3373,7 +3389,8 @@ function Footer({ lang }) {
       <div className="footer-contact">
         <a href={`mailto:${companyContactEmail}`}><Mail size={17} /> {companyContactEmail}</a>
         <a href={`tel:${companyContactPhone.replace(/\s/g, "")}`}><Phone size={17} /> {companyContactPhone}</a>
-        <a href={companyInstagramUrl} target="_blank" rel="noreferrer"><InstagramIcon size={17} /> @idukkispicesfr</a>
+        <a href={companyInstagramUrl} target="_blank" rel="noreferrer"><InstagramIcon size={17} /> @idukkispicesfrance</a>
+        <a href={companyFacebookUrl} target="_blank" rel="noreferrer"><FacebookIcon size={17} /> Facebook</a>
         <span><MapPin size={17} /> {companyContactLocation}</span>
       </div>
       <nav className="footer-policies" aria-label={isFrench ? "Politiques" : "Policies"}>
