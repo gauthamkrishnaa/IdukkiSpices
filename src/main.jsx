@@ -68,6 +68,7 @@ const companyContactLocation = "Paris, France";
 const companyInstagramUrl = "https://www.instagram.com/idukkispicesfrance/";
 const companyFacebookUrl = "https://www.facebook.com/profile.php?id=61591953571977";
 const trustedCheckoutHosts = new Set(["checkout.stripe.com"]);
+const isParisAddress = (address) => /(?:^|\D)75\d{3}(?:\D|$)/.test(String(address || ""));
 
 function getTrustedCheckoutUrl(value) {
   try {
@@ -478,7 +479,7 @@ const translations = {
   "Free": "Gratuite",
   "Total": "Total",
   "Minimum order value is €20.": "Le minimum de commande est de 20 €.",
-  "Shipping is €4.99, free over €50.": "La livraison est de 4,99 €, gratuite dès 50 €.",
+  "Free delivery in Paris (75).": "Livraison gratuite à Paris (75).",
   "Add more spices to reach the €20 minimum order.": "Ajoutez plus d'épices pour atteindre le minimum de commande de 20 €.",
   "You have free delivery on this order.": "La livraison est gratuite pour cette commande.",
   "Checkout": "Paiement",
@@ -928,7 +929,7 @@ function App() {
   useEffect(() => {
     sessionStorage.setItem(checkoutDeliveryMethodKey, deliveryMethod);
   }, [deliveryMethod]);
-  const shippingFee = deliveryMethod === "pickup"
+  const shippingFee = deliveryMethod === "pickup" || (deliveryMethod === "delivery" && isParisAddress(customer?.address))
     ? 0
     : (cartTotal > 0 && cartTotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_FEE : 0);
   const orderTotal = cartTotal + shippingFee;
@@ -1355,8 +1356,8 @@ function HomeDeliveryBanner({ go, lang }) {
         <span>{isFrench ? "Livraison" : "Delivery"}</span>
       </div>
       <strong>{isFrench ? "Minimum de commande 20 €" : "Minimum order €20"}</strong>
-      <strong>{isFrench ? "Livraison gratuite dès 50 €" : "Free delivery over €50"}</strong>
-      <p>{isFrench ? "Livraison 4,99 € sous 50 €." : "€4.99 shipping under €50."}</p>
+      <strong>{isFrench ? "Livraison gratuite dans Paris (75)" : "Free delivery inside Paris (75)"}</strong>
+      <p>{isFrench ? "Hors Paris : 4,99 €, gratuite dès 50 €." : "Outside Paris: €4.99, free over €50."}</p>
       <button className="primary small" onClick={() => go("shop")} type="button">
         {isFrench ? "Voir la boutique" : "Shop now"}
       </button>
@@ -1982,20 +1983,22 @@ function QuantityInput({ value, onChange, label }) {
   );
 }
 
-function DeliveryNotice({ subtotal, lang }) {
+function DeliveryNotice({ subtotal, lang, parisDelivery = false }) {
   const remaining = Math.max(0, MIN_ORDER_VALUE - subtotal);
   const isFrench = lang === "fr";
   return (
     <div className="delivery-notice">
       <Truck size={20} />
       <div>
-        <strong>{isFrench ? "Livraison 4,99 €, gratuite dès 50 €." : "€4.99 delivery, free over €50."}</strong>
+        <strong>{isFrench ? "Livraison gratuite à Paris (75)." : "Free delivery in Paris (75)."}</strong>
         <p>
-          {subtotal >= FREE_SHIPPING_THRESHOLD
+          {parisDelivery
+            ? (isFrench ? "Cette adresse bénéficie de la livraison gratuite." : "This address qualifies for free delivery.")
+            : subtotal >= FREE_SHIPPING_THRESHOLD
             ? (isFrench ? "La livraison est gratuite pour cette commande." : "You have free delivery on this order.")
             : (isFrench
-              ? `Minimum de commande : 20 €.${remaining > 0 ? ` Ajoutez encore ${money(remaining)} pour commander.` : " Livraison : 4,99 €."}`
-              : `Minimum order value is €20.${remaining > 0 ? ` Add ${money(remaining)} more to checkout.` : " Shipping: €4.99."}`)}
+              ? `Hors Paris : 4,99 €, gratuite dès 50 €.${remaining > 0 ? ` Ajoutez encore ${money(remaining)} pour commander.` : ""}`
+              : `Outside Paris: €4.99, free over €50.${remaining > 0 ? ` Add ${money(remaining)} more to checkout.` : ""}`)}
         </p>
       </div>
     </div>
@@ -2012,6 +2015,11 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
     address: customer?.address || ""
   }));
   const [note, setNote] = useState(cancelledOrderId ? `Payment was cancelled. Order ${cancelledOrderId} is not confirmed.` : "");
+  const parisDelivery = deliveryMethod === "delivery" && isParisAddress(form.address);
+  const checkoutShippingFee = deliveryMethod === "pickup" || parisDelivery
+    ? 0
+    : (cartTotal > 0 && cartTotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_FEE : 0);
+  const checkoutOrderTotal = cartTotal + checkoutShippingFee;
   useEffect(() => {
     if (!customer) return;
     setForm((current) => ({
@@ -2039,8 +2047,8 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
       pickupAddress: deliveryMethod === "pickup" ? PICKUP_ADDRESS : "",
       items: cartItems.map(({ id, name, qty, price, image }) => ({ id, name, qty, price, image })),
       subtotal: cartTotal,
-      shippingFee,
-      total: orderTotal
+      shippingFee: checkoutShippingFee,
+      total: checkoutOrderTotal
     };
     try {
       const saved = await api("/api/orders", { method: "POST", body: JSON.stringify(order) });
@@ -2072,7 +2080,7 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
             <Truck size={22} />
             <span>
               <strong>{lang === "fr" ? "Livraison à domicile" : "Home delivery"}</strong>
-              <small>{cartTotal >= FREE_SHIPPING_THRESHOLD ? (lang === "fr" ? "Gratuite pour cette commande" : "Free for this order") : (lang === "fr" ? "4,99 € — gratuite dès 50 €" : "€4.99 — free over €50")}</small>
+              <small>{lang === "fr" ? "Gratuite à Paris (75) · hors Paris : 4,99 €, gratuite dès 50 €" : "Free in Paris (75) · outside Paris: €4.99, free over €50"}</small>
             </span>
           </label>
           <label className={`delivery-option ${deliveryMethod === "pickup" ? "selected" : ""}`}>
@@ -2084,7 +2092,7 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
             </span>
           </label>
         </fieldset>
-        {deliveryMethod === "delivery" && <DeliveryNotice subtotal={cartTotal} lang={lang} />}
+        {deliveryMethod === "delivery" && <DeliveryNotice subtotal={cartTotal} lang={lang} parisDelivery={parisDelivery} />}
         {deliveryMethod === "pickup" && (
           <div className="pickup-notice"><MapPin size={20} /><div><strong>{lang === "fr" ? "Aucuns frais de livraison" : "No shipping charge"}</strong><p>{lang === "fr" ? "Nous vous informerons lorsque votre commande sera prête à être retirée." : "We will notify you when your order is ready to collect."}</p></div></div>
         )}
@@ -2108,8 +2116,8 @@ function Checkout({ cartItems, cartTotal, shippingFee, orderTotal, canCheckout, 
           return <p key={item.id}><span>{displayItem.name} x {item.qty}</span><strong>{money(item.price * item.qty)}</strong></p>;
         })}
         <p><span>Subtotal</span><strong>{money(cartTotal)}</strong></p>
-        <p><span>{deliveryMethod === "pickup" ? (lang === "fr" ? "Retrait" : "Pickup") : "Shipping"}</span><ShippingPrice subtotal={cartTotal} shippingFee={shippingFee} lang={lang} deliveryMethod={deliveryMethod} /></p>
-        <p className="total"><span>Total</span><strong>{money(orderTotal)}</strong></p>
+        <p><span>{deliveryMethod === "pickup" ? (lang === "fr" ? "Retrait" : "Pickup") : "Shipping"}</span><ShippingPrice subtotal={cartTotal} shippingFee={checkoutShippingFee} lang={lang} deliveryMethod={deliveryMethod} /></p>
+        <p className="total"><span>Total</span><strong>{money(checkoutOrderTotal)}</strong></p>
       </aside>
     </main>
   );
@@ -3271,7 +3279,7 @@ const policyContent = {
       intro: "This page explains the delivery charges and process currently used for Idukki Spices orders in France.",
       sections: [
         ["Order minimum", "The minimum product subtotal required to proceed to checkout is €20."],
-        ["Delivery charge", "Shipping costs €4.99 when the product subtotal is below €50. Standard shipping is free when the product subtotal reaches €50."],
+        ["Delivery charge", "Delivery is free for verified addresses in Paris department 75. Outside Paris, shipping costs €4.99 when the product subtotal is below €50 and is free when the subtotal reaches €50."],
         ["Free pickup in Paris", `Customers may choose pickup before payment. Pickup has no shipping charge and is available at ${PICKUP_ADDRESS}. We will send an update when the order is ready to collect.`],
         ["Order preparation", "Preparation begins after payment is confirmed. You will receive order updates using the contact information supplied during checkout. Any delivery estimate communicated after purchase is an estimate rather than a guaranteed arrival time unless expressly stated otherwise."],
         ["Delivery address", "Please check the recipient name, address, postcode, phone number, and access instructions before payment. Contact us promptly if a correction is needed; changes may not be possible after dispatch."],
@@ -3328,7 +3336,7 @@ const policyContent = {
       intro: "Cette page présente les frais et le processus de livraison actuellement appliqués aux commandes Idukki Spices en France.",
       sections: [
         ["Minimum de commande", "Le sous-total minimum de produits pour accéder au paiement est de 20 €."],
-        ["Frais de livraison", "La livraison coûte 4,99 € lorsque le sous-total est inférieur à 50 €. La livraison standard est gratuite à partir de 50 €."],
+        ["Frais de livraison", "La livraison est gratuite pour les adresses vérifiées dans le département 75 (Paris). Hors Paris, elle coûte 4,99 € lorsque le sous-total est inférieur à 50 € et devient gratuite à partir de 50 €."],
         ["Retrait gratuit à Paris", `Le retrait peut être choisi avant le paiement et n'entraîne aucuns frais de livraison. Adresse de retrait : ${PICKUP_ADDRESS}. Nous vous informerons lorsque la commande sera prête.`],
         ["Préparation", "La préparation commence après confirmation du paiement. Les mises à jour sont envoyées aux coordonnées fournies. Toute estimation communiquée après l'achat reste indicative, sauf engagement exprès contraire."],
         ["Adresse", "Vérifiez le nom, l'adresse, le code postal, le téléphone et les instructions d'accès avant paiement. Contactez-nous rapidement pour une correction; elle peut devenir impossible après expédition."],

@@ -94,9 +94,12 @@ function applySecurityHeaders(res) {
   }
 }
 
-function calculateOrderCharges(items = [], deliveryMethod = "delivery") {
+function calculateOrderCharges(items = [], deliveryMethod = "delivery", postcode = "") {
   const subtotal = items.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || 0)), 0);
-  const shippingFee = deliveryMethod === "pickup" ? 0 : (subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_FEE : 0);
+  const isParisDelivery = deliveryMethod === "delivery" && String(postcode).startsWith("75");
+  const shippingFee = deliveryMethod === "pickup" || isParisDelivery
+    ? 0
+    : (subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_FEE : 0);
   return {
     subtotal: Number(subtotal.toFixed(2)),
     shippingFee: Number(shippingFee.toFixed(2)),
@@ -1378,7 +1381,7 @@ async function handleApi(req, res, url) {
         }
         validatedItems.push({ id: product.id, name: product.name, qty, price: Number(product.price), image: product.image });
       }
-      const charges = calculateOrderCharges(validatedItems, deliveryMethod);
+      const charges = calculateOrderCharges(validatedItems, deliveryMethod, verifiedAddress?.postcode || "");
       if (charges.subtotal < MIN_ORDER_VALUE) {
         return sendJson(res, 400, { error: "Minimum order value is €20." });
       }
@@ -1388,6 +1391,7 @@ async function handleApi(req, res, url) {
         id: orderId,
         customer: { ...incomingOrder.customer, address: verifiedAddress?.label || customerAddress },
         deliveryMethod,
+        deliveryZone: deliveryMethod === "pickup" ? "pickup" : (verifiedAddress?.postcode?.startsWith("75") ? "paris" : "france"),
         pickupAddress: deliveryMethod === "pickup" ? PICKUP_ADDRESS : "",
         deliveryAddressValidation: verifiedAddress,
         items: validatedItems,
